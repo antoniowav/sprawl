@@ -49,7 +49,9 @@ type saveFile struct {
 	Terrain, Kind, Level, Variant, Flags []byte
 	Anchor                               []int32
 	LandValue, Pollution                 []float32
-	Cover                                [3][]float32
+	Cover                                [4][]float32
+	Traffic                              []uint16
+	Commute                              []int16
 	UnpoweredDays                        []uint16
 }
 
@@ -76,6 +78,7 @@ func (c *City) Save(w io.Writer) error {
 		Terrain: make([]byte, n), Kind: make([]byte, n), Level: make([]byte, n), Variant: make([]byte, n),
 		Flags: make([]byte, n), Anchor: make([]int32, n), LandValue: make([]float32, n),
 		Pollution: make([]float32, n), UnpoweredDays: make([]uint16, n),
+		Traffic: make([]uint16, n), Commute: make([]int16, n),
 	}
 	for k := range f.Cover {
 		f.Cover[k] = make([]float32, n)
@@ -87,6 +90,7 @@ func (c *City) Save(w io.Writer) error {
 		for k := range f.Cover {
 			f.Cover[k][i] = t.Cover[k]
 		}
+		f.Traffic[i], f.Commute[i] = t.Traffic, t.Commute
 	}
 	zw := gzip.NewWriter(w)
 	if err := json.NewEncoder(zw).Encode(&f); err != nil {
@@ -122,10 +126,20 @@ func Load(r io.Reader) (*City, error) {
 		len(f.Pollution) != n || len(f.UnpoweredDays) != n {
 		return nil, fmt.Errorf("corrupt save: tile arrays don't match %dx%d", f.W, f.H)
 	}
+	// Fields added after 0.1.0 may be missing from older saves.
 	for k := range f.Cover {
+		if len(f.Cover[k]) == 0 {
+			f.Cover[k] = make([]float32, n)
+		}
 		if len(f.Cover[k]) != n {
 			return nil, fmt.Errorf("corrupt save: coverage arrays")
 		}
+	}
+	if len(f.Traffic) != n {
+		f.Traffic = make([]uint16, n)
+	}
+	if len(f.Commute) != n {
+		f.Commute = make([]int16, n)
 	}
 	c := &City{
 		Name: f.Name, W: f.W, H: f.H, Seed: f.Seed, Ticks: f.Ticks, Day: f.Day, Funds: f.Funds,
@@ -151,6 +165,7 @@ func Load(r io.Reader) (*City, error) {
 		for k := range t.Cover {
 			t.Cover[k] = f.Cover[k][i]
 		}
+		t.Traffic, t.Commute = f.Traffic[i], f.Commute[i]
 		if t.Anchor < -1 || int(t.Anchor) >= n {
 			return nil, fmt.Errorf("corrupt save: bad anchor at tile %d", i)
 		}

@@ -42,7 +42,9 @@ type Atlas struct {
 var civicNames = map[sim.Kind]string{
 	sim.PowerPlant: "plant", sim.WindTurbine: "wind", sim.WaterPump: "pump", sim.WaterTower: "tower",
 	sim.Police: "police", sim.Fire: "fire", sim.School: "school", sim.Park: "park",
-	sim.CityHall: "hall", sim.Stadium: "stadium",
+	sim.CityHall: "hall", sim.Stadium: "stadium", sim.BusStop: "busstop", sim.BusDepot: "depot",
+	sim.Hospital: "hospital", sim.SolarFarm: "solar", sim.University: "university",
+	sim.NuclearPlant: "nuclear", sim.Monument: "monument",
 }
 
 // NewAtlas builds the sprites for roles and uploads them.

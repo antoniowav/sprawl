@@ -16,24 +16,40 @@ const (
 	OverlayNone Overlay = iota
 	OverlayPower
 	OverlayWater
+	OverlayTraffic
 	OverlayPolice
 	OverlayFire
 	OverlaySchool
+	OverlayHealth
 	OverlayLandValue
 	OverlayPollution
 	overlayCount
 )
 
-var overlayNames = [...]string{"none", "power", "water", "police", "fire", "school", "land value", "pollution"}
+var overlayNames = [...]string{"none", "power", "water", "traffic", "police", "fire", "school", "health",
+	"land value", "pollution"}
 
 // Heat reports whether the overlay is a 0..1 heat map (it has a legend).
-func (o Overlay) Heat() bool { return o >= OverlayPolice }
+func (o Overlay) Heat() bool { return o >= OverlayTraffic }
+
+// Service reports the Tile.Cover index a coverage overlay shows.
+func (o Overlay) Service() (int, bool) {
+	if o >= OverlayPolice && o <= OverlayHealth {
+		return int(o - OverlayPolice), true
+	}
+	return 0, false
+}
 
 // heatValue is the 0..1 value a heat overlay shows for a tile.
 func heatValue(o Overlay, t *sim.Tile) float64 {
+	if s, ok := o.Service(); ok {
+		return float64(t.Cover[s])
+	}
 	switch o {
-	case OverlayPolice, OverlayFire, OverlaySchool:
-		return float64(t.Cover[o-OverlayPolice])
+	case OverlayTraffic:
+		if t.Kind == sim.Road {
+			return min(1, t.Congestion())
+		}
 	case OverlayLandValue:
 		return float64(t.LandValue)
 	case OverlayPollution:
@@ -45,7 +61,7 @@ func heatValue(o Overlay, t *sim.Tile) float64 {
 // HeatColor is the tint for value v of overlay o (premultiplied).
 func HeatColor(r theme.Roles, o Overlay, v float64) color.RGBA {
 	c := r.UIAccent
-	if o == OverlayPollution {
+	if o == OverlayPollution || o == OverlayTraffic {
 		c = r.UIWarn
 	}
 	c.A = uint8(0x10 + v*0xc0)

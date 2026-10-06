@@ -11,12 +11,17 @@ func TestBalanceTrace(t *testing.T) {
 	if os.Getenv("BALANCE") == "" {
 		t.Skip()
 	}
-	c := flat(60, 60)
-	// A grid: roads every 3 rows, zones between (R left, C middle, I right).
+	c := flat(63, 60)
+	// A grid: roads every 3 rows, zones between (R left, C middle, I right),
+	// and a column of power plants on the east edge (roads carry power).
 	for y := 0; y < 60; y += 3 {
 		c.Apply(ToolRoad, RectPts(Pt{0, y}, Pt{59, y}), false)
 	}
 	c.Funds = 1e9
+	c.PeakPop = 1e6 // everything unlocked
+	for y := 0; y+2 < 60; y += 3 {
+		c.Apply(ToolNuclear, []Pt{{60, y}}, false)
+	}
 	c.Apply(ToolZoneR, RectPts(Pt{0, 0}, Pt{29, 59}), false)
 	c.Apply(ToolZoneC, RectPts(Pt{30, 0}, Pt{39, 59}), false)
 	c.Apply(ToolZoneI, RectPts(Pt{40, 0}, Pt{59, 59}), false)

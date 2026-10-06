@@ -35,8 +35,8 @@ func MaxLevel(lv float32) uint8 {
 // Score is the growth score of a zone tile (SPEC §6.3).
 func (c *City) Score(t *Tile) float64 {
 	z := int(t.Kind - ZoneR)
-	cover := float64(t.Cover[0]+t.Cover[1]+t.Cover[2]) / 3
-	return c.Demand[z] + lvWeight*(float64(t.LandValue)-0.5) + coverWeight*(cover-0.5)
+	cover := float64(t.Cover[0]+t.Cover[1]+t.Cover[2]+t.Cover[3]) / 4
+	return c.Demand[z] + lvWeight*(float64(t.LandValue)-0.5) + coverWeight*(cover-0.5) - c.commutePenalty(t)
 }
 
 // growTile returns +1, -1 or 0.
@@ -55,7 +55,7 @@ func (c *City) growTile(t *Tile, x, y int) int {
 	// a building upgrades.
 	gs := s
 	if t.Level == 0 {
-		gs = c.Demand[t.Kind-ZoneR]
+		gs = c.Demand[t.Kind-ZoneR] - c.commutePenalty(t)
 	}
 	if canGrow && gs > 0 && c.rng.Float64() < min(growMax, growScale*gs) {
 		return 1

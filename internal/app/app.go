@@ -117,14 +117,16 @@ type App struct {
 	histIdx         int
 	seed            int64
 
-	simAcc     float64
-	lastUpdate time.Time
-	dayClock   float64 // seconds into the day/night cycle (sim time)
-	particles  []render.Particle
-	emitters   []image.Point
-	smokeAcc   float64
-	smokeRng   *rand.Rand
-	grows      map[sim.Pt]time.Time // grow animations in progress
+	simAcc      float64
+	lastUpdate  time.Time
+	dayClock    float64 // seconds into the day/night cycle (sim time)
+	carClock    float64 // seconds of running sim time, for cars
+	carsVisible bool
+	particles   []render.Particle
+	emitters    []image.Point
+	smokeAcc    float64
+	smokeRng    *rand.Rand
+	grows       map[sim.Pt]time.Time // grow animations in progress
 
 	msg      string
 	msgLevel sim.EventLevel
@@ -211,6 +213,14 @@ func New(o Options) *App {
 			continue
 		case "@start":
 			a.startCity()
+			continue
+		}
+		if v, ok := strings.CutPrefix(tok, "@tool:"); ok {
+			for _, b := range sim.Buildings {
+				if b.Tool.String() == v {
+					a.setTool(b.Tool)
+				}
+			}
 			continue
 		}
 		if v, ok := strings.CutPrefix(tok, "@map:"); ok && a.nc != nil {
@@ -346,10 +356,14 @@ func (a *App) Update() error {
 		a.msg, a.dirty = "", true
 	}
 	growing := len(a.grows) > 0
+	cars := a.carsVisible && !a.paused && a.cfg.Animations && a.scene == sceneGame
+	if cars {
+		a.dirty = true
+	}
 	if growing {
 		a.dirty = true
 	}
-	a.pace.set(camMoving, growing, a.scene != sceneGame || a.cfg.Animations && a.animVisible && !a.paused, simRate)
+	a.pace.set(camMoving, growing || cars, a.scene != sceneGame || a.cfg.Animations && a.animVisible && !a.paused, simRate)
 	if a.quit {
 		return ebiten.Termination
 	}
@@ -404,6 +418,7 @@ func (a *App) stepSim(now time.Time) float64 {
 		a.dayClock += dt * speedMult[a.speed]
 	}
 	a.stepSmoke(dt * speedMult[a.speed])
+	a.carClock += dt
 	rate := float64(a.cfg.TicksPerSecond) * speedMult[a.speed]
 	a.simAcc += dt * rate
 	for n := 0; a.simAcc >= 1 && n < 16; n++ {
@@ -623,7 +638,7 @@ func (a *App) Draw(screen *ebiten.Image) {
 		CursorX: cx, CursorY: cy, AnimFrame: a.animFrame, Animations: a.cfg.Animations,
 		Underground: a.underground, Grow: a.growProgress, Chunks: a.chunks, Growing: a.growingList(),
 		Overlay: a.overlay, Blink: !a.cfg.Animations || time.Now().UnixMilli()/500%2 == 0,
-		Night: a.night(), Particles: a.particles, Emitters: &a.emitters,
+		Night: a.night(), Particles: a.particles, Emitters: &a.emitters, Time: a.carClock, CarsOut: &a.carsVisible,
 	}
 	if plan, sel, ok := a.pending(); ok {
 		view.Preview, view.PreviewBad = plan.Tiles, plan.Err != ""
@@ -631,6 +646,7 @@ func (a *App) Draw(screen *ebiten.Image) {
 			view.Preview = sel
 		}
 	}
+	a.carsVisible = false
 	a.animVisible = render.DrawWorld(screen, view) || len(a.particles) > 0 || len(a.emitters) > 0
 	switch a.scene {
 	case sceneTitle:
@@ -802,8 +818,13 @@ func (a *App) tileInfo() string {
 	if t.Terrain != sim.Water {
 		parts = append(parts, fmt.Sprintf("LV %.2f", t.LandValue))
 		switch {
-		case a.overlay >= render.OverlayPolice && a.overlay <= render.OverlaySchool:
-			parts = append(parts, fmt.Sprintf("%s %.0f%%", a.overlay, 100*t.Cover[a.overlay-render.OverlayPolice]))
+		case t.Kind == sim.Road && t.Traffic > 0:
+			parts = append(parts, fmt.Sprintf("traffic %d (%.0f%%)", t.Traffic, 100*t.Congestion()))
+		case t.Kind == sim.ZoneR && t.Level > 0 && t.Commute < 0:
+			parts = append(parts, "no road to jobs")
+		case func() bool { _, ok := a.overlay.Service(); return ok }():
+			si, _ := a.overlay.Service()
+			parts = append(parts, fmt.Sprintf("%s %.0f%%", a.overlay, 100*t.Cover[si]))
 		case t.Pollution > 0.05:
 			parts = append(parts, fmt.Sprintf("smog %.0f%%", 100*t.Pollution))
 		}

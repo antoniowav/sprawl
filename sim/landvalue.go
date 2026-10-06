@@ -7,7 +7,7 @@ import "math"
 func (c *City) updateLandValue() {
 	for i := range c.Tiles {
 		c.Tiles[i].Pollution = 0
-		c.Tiles[i].Cover = [3]float32{}
+		c.Tiles[i].Cover = [4]float32{}
 	}
 	addPollution := func(t *Tile, v float64) { t.Pollution = float32(min(1, float64(t.Pollution)+v)) }
 	if len(c.lvBonus) != len(c.Tiles) {
@@ -38,7 +38,11 @@ func (c *City) updateLandValue() {
 					strength = 0.5
 				}
 				// Full strength near the building: 1.25·(1 − d/r), capped at 1.
-				c.spreadFrom(cx, cy, serviceRadius[s], coverPlateau*strength, func(t *Tile, v float64) {
+				rad := serviceRadius[s]
+				if b.ServiceRadius > 0 {
+					rad = b.ServiceRadius
+				}
+				c.spreadFrom(cx, cy, rad, coverPlateau*strength, func(t *Tile, v float64) {
 					t.Cover[s] = float32(min(1, float64(t.Cover[s])+v))
 				})
 			}
@@ -51,7 +55,10 @@ func (c *City) updateLandValue() {
 				lvWater*b2f(c.near(x, y, lvWaterRadius, func(t *Tile) bool { return t.Terrain == Water })) +
 				lvNeighbourhood*c.neighbourhood(x, y) -
 				lvPollution*float64(t.Pollution)
-			lv += 0.10*float64(t.Cover[0]) + 0.10*float64(t.Cover[1]) + 0.15*float64(t.Cover[2])
+			lv += 0.10*float64(t.Cover[0]) + 0.10*float64(t.Cover[1]) + 0.15*float64(t.Cover[2]) + 0.10*float64(t.Cover[3])
+			if len(c.noise) == len(c.Tiles) {
+				lv -= float64(c.noise[y*c.W+x])
+			}
 			lv += float64(c.lvBonus[y*c.W+x])
 			t.LandValue = float32(clamp(lv, 0, 1))
 		}

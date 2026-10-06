@@ -17,7 +17,7 @@ import (
 // 60 Hz loop entirely. config: low_power = false falls back to plain vsync.
 const (
 	hzActive = 60 // keys held, camera easing, mouse dragging
-	hzGrow   = 24 // buildings rising: 16 px in 300 ms still steps smoothly
+	hzGrow   = 15 // buildings rising or cars driving: smooth enough for pixel art
 	hzAnim   = 8  // animations visible (they step at 4 fps)
 	hzIdle   = 2  // theme polling and message timeouts
 )

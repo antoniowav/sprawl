@@ -32,6 +32,7 @@ func (c *City) Tick() []Pt {
 func (c *City) daily() {
 	c.updateUtilities()
 	if c.Day%landValueEveryNd == 0 || c.lvDirty {
+		c.updateTraffic()
 		c.updateLandValue()
 		c.lvDirty = false
 	}

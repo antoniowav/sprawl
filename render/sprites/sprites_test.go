@@ -79,7 +79,8 @@ func TestBuildingsAllDistinct(t *testing.T) {
 func TestCivicSizes(t *testing.T) {
 	c := BuildCivic(theme.Derive(theme.Builtin()))
 	want := map[string]int{"plant": 3, "wind": 1, "pump": 2, "tower": 1, "police": 2, "fire": 2,
-		"school": 2, "park": 1, "hall": 3, "stadium": 3}
+		"school": 2, "park": 1, "hall": 3, "stadium": 3, "busstop": 1, "depot": 2, "hospital": 2,
+		"solar": 2, "university": 3, "nuclear": 3, "monument": 2}
 	for name, n := range want {
 		img := c.Img[name]
 		if img == nil || img.Bounds().Dx() != n*T || img.Bounds().Dy() != n*T {

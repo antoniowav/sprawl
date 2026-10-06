@@ -31,6 +31,8 @@ type WorldView struct {
 
 	Overlay   Overlay
 	Blink     bool    // icon blink phase
+	Time      float64 // seconds of sim time, for moving cars
+	CarsOut   *bool   // set when cars are on screen
 	Night     float64 // 0 day .. 1 deep night
 	Particles []Particle
 
@@ -83,6 +85,12 @@ func DrawWorld(dst *ebiten.Image, v WorldView) (animated bool) {
 					draw(v.Atlas.Shimmer[(v.AnimFrame+int(hsh>>8))%4], tx, ty)
 				}
 			}
+		}
+	}
+	if drawCars(dst, v, x0, y0, x1, y1, ox, oy) {
+		animated = true
+		if v.CarsOut != nil {
+			*v.CarsOut = true
 		}
 	}
 	for _, p := range v.Growing {

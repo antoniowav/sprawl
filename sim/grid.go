@@ -33,6 +33,13 @@ const (
 	WaterTower
 	CityHall
 	Stadium
+	BusStop
+	BusDepot
+	Hospital
+	SolarFarm
+	University
+	NuclearPlant
+	Monument
 )
 
 // Tile is one map cell. Derived fields are recomputed by the sim and are
@@ -50,8 +57,10 @@ type Tile struct {
 	Powered, Watered bool
 	LandValue        float32    // 0..1
 	Pollution        float32    // 0..1
-	Cover            [3]float32 // police, fire, school
+	Cover            [4]float32 // police, fire, school, health
 	UnpoweredDays    uint16
+	Traffic          uint16 // road tiles: commuters passing per day
+	Commute          int16  // homes: road distance to the nearest jobs, -1 if none
 }
 
 // City is the whole simulation state.
@@ -88,6 +97,7 @@ type City struct {
 
 	brownout, waterShort bool
 	lvBonus              []float32 // scratch for updateLandValue
+	noise                []float32 // land-value loss from busy roads, set by updateTraffic
 	yearNet              float64
 }
 

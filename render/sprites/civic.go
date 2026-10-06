@@ -38,6 +38,13 @@ func BuildCivic(r theme.Roles) Civic {
 	c.Img["park"] = p.park()
 	c.Img["hall"] = p.cityHall()
 	c.Img["stadium"] = p.stadium()
+	c.Img["busstop"] = p.busStop()
+	c.Img["depot"] = p.busDepot()
+	c.Img["hospital"] = p.hospital()
+	c.Img["solar"] = p.solar()
+	c.Img["university"] = p.university()
+	c.Img["nuclear"] = p.nuclear()
+	c.Img["monument"] = p.monument()
 	i := 0
 	for name, img := range c.Img {
 		c.Lights[name] = p.lights(img, uint64(900+len(name)*31+i))
@@ -345,6 +352,153 @@ func (p *painter) stadium() *image.RGBA {
 	// Floodlights.
 	for _, c := range [][2]int{{4, 4}, {43, 4}, {4, 43}, {43, 43}} {
 		rectB(img, c[0], c[1], c[0]+2, c[1]+2, p.r.Window)
+	}
+	return img
+}
+
+func (p *painter) busStop() *image.RGBA {
+	img := newTile()
+	fill(img, p.pave)
+	rect(img, 0, 0, T, 1, p.r.Sidewalk)
+	// Shelter roof, glass back wall and a sign post.
+	rect(img, 3, 4, 13, 6, p.r.ZoneC)
+	rect(img, 3, 6, 13, 9, theme.Mix(p.glass, p.pave, 0.3))
+	rect(img, 3, 9, 4, 12, p.flatD)
+	rect(img, 12, 9, 13, 12, p.flatD)
+	rect(img, 6, 10, 10, 11, p.door) // bench
+	rect(img, 14, 3, 15, 13, p.flatD)
+	rect(img, 13, 2, 16, 5, p.r.Power)
+	return img
+}
+
+func (p *painter) bus(img *image.RGBA, x, y int, horizontal bool) {
+	body := p.r.ZoneC
+	if horizontal {
+		rectB(img, x+1, y+1, x+13, y+6, p.shadow)
+		rectB(img, x, y, x+12, y+5, body)
+		rectB(img, x+1, y+1, x+11, y+2, p.glass)
+		return
+	}
+	rectB(img, x+1, y+1, x+6, y+13, p.shadow)
+	rectB(img, x, y, x+5, y+12, body)
+	rectB(img, x+1, y+1, x+4, y+3, p.glass)
+}
+
+func (p *painter) busDepot() *image.RGBA {
+	img := big(2)
+	p.pad(img, p.pave)
+	p.blockB(img, 2, 2, 28, 7, 6, p.flat, p.r.Walls[2])
+	for i := 0; i < 3; i++ {
+		x := 4 + i*9
+		rectB(img, x, 10, x+7, 15, p.door)
+	}
+	p.bus(img, 3, 19, true)
+	p.bus(img, 17, 24, true)
+	return img
+}
+
+func (p *painter) hospital() *image.RGBA {
+	img := big(2)
+	p.pad(img, p.pave)
+	white := light(p.r.Walls[0])
+	p.blockB(img, 2, 2, 22, 9, 10, theme.Mix(white, p.flat, 0.3), white)
+	p.windows(img, 4, 23, 14, 3, 2, 2, p.glass)
+	// Red cross on the roof.
+	rectB(img, 11, 3, 15, 10, p.r.UIErr)
+	rectB(img, 9, 5, 17, 8, p.r.UIErr)
+	// Helipad.
+	discB(img, 27.5, 26.5, 4, func(dx, dy float64) color.RGBA { return p.flatD })
+	rectB(img, 26, 24, 27, 29, white)
+	rectB(img, 29, 24, 30, 29, white)
+	rectB(img, 26, 26, 30, 27, white)
+	rectB(img, 12, 21, 16, 24, p.door)
+	return img
+}
+
+func (p *painter) solar() *image.RGBA {
+	img := big(2)
+	fill(img, theme.Mix(p.r.Grass, p.r.GrassDark, 0.5))
+	panel := theme.Mix(p.r.Water, p.glass, 0.4)
+	for y := 2; y < 30; y += 7 {
+		for x := 2; x < 30; x += 10 {
+			rectB(img, x+1, y+1, x+9, y+6, p.shadow)
+			rectB(img, x, y, x+8, y+5, panel)
+			rectB(img, x, y, x+8, y+1, light(panel))
+			rectB(img, x+4, y, x+5, y+5, dark(panel))
+		}
+	}
+	return img
+}
+
+func (p *painter) university() *image.RGBA {
+	img := big(3)
+	fill(img, p.r.Grass)
+	path := theme.Mix(p.r.Sidewalk, p.r.Roofs[1], 0.25)
+	rectB(img, 22, 0, 26, 48, path)
+	rectB(img, 0, 30, 48, 33, path)
+	wall := p.r.Walls[1]
+	p.blockB(img, 2, 3, 18, 8, 8, p.r.Roofs[1], wall)
+	p.windows(img, 4, 19, 14, 2, 2, 2, p.glass)
+	p.blockB(img, 28, 3, 18, 8, 8, p.r.Roofs[1], wall)
+	p.windows(img, 30, 45, 14, 2, 2, 2, p.glass)
+	p.blockB(img, 4, 36, 14, 6, 5, dark(p.r.Roofs[1]), wall)
+	// Clock tower.
+	rectB(img, 31, 34, 39, 47, p.shadow)
+	rectB(img, 30, 33, 38, 46, light(wall))
+	discB(img, 34, 37, 2.5, func(dx, dy float64) color.RGBA { return p.r.Walls[0] })
+	img.SetRGBA(34, 36, p.flatD)
+	img.SetRGBA(35, 37, p.flatD)
+	for _, c := range [][2]float64{{8, 26}, {42, 26}, {16, 44}} {
+		disc2 := func(dx, dy float64) color.RGBA { return p.r.Tree }
+		discB(img, c[0], c[1], 3, disc2)
+	}
+	return img
+}
+
+func (p *painter) nuclear() *image.RGBA {
+	img := big(3)
+	p.pad(img, p.pave)
+	for _, c := range [][2]float64{{12, 13}, {34, 13}} {
+		discB(img, c[0]+1.5, c[1]+1.5, 9.5, func(dx, dy float64) color.RGBA { return p.shadow })
+		discB(img, c[0], c[1], 9.5, func(dx, dy float64) color.RGBA {
+			if dx+dy < -6 {
+				return light(p.flat)
+			}
+			return p.flat
+		})
+		discB(img, c[0], c[1], 6, func(dx, dy float64) color.RGBA {
+			return theme.Mix(p.r.Walls[0], p.flat, 0.3) // steam
+		})
+	}
+	// Reactor dome and hall.
+	p.blockB(img, 4, 29, 24, 8, 8, p.flatD, p.r.Walls[0])
+	discB(img, 37.5, 35.5, 7, func(dx, dy float64) color.RGBA { return p.shadow })
+	discB(img, 37, 35, 7, func(dx, dy float64) color.RGBA {
+		if dx+dy < -4 {
+			return light(p.r.Walls[0])
+		}
+		return p.r.Walls[0]
+	})
+	rectB(img, 8, 41, 12, 44, p.r.Power)
+	return img
+}
+
+func (p *painter) monument() *image.RGBA {
+	img := big(2)
+	plaza := theme.Mix(p.r.Sidewalk, p.r.Walls[1], 0.3)
+	fill(img, plaza)
+	for i := 0; i < 32; i += 4 {
+		rectB(img, i, 0, i+1, 32, dark(plaza))
+		rectB(img, 0, i, 32, i+1, dark(plaza))
+	}
+	// Obelisk on a plinth, with its long shadow.
+	rectB(img, 17, 10, 21, 30, p.shadow)
+	rectB(img, 10, 22, 22, 28, p.flatD)
+	rectB(img, 14, 3, 18, 24, light(p.r.Walls[0]))
+	rectB(img, 17, 3, 18, 24, p.r.Walls[0])
+	rectB(img, 15, 1, 17, 3, p.r.Power)
+	for _, c := range [][2]float64{{5, 6}, {27, 6}, {5, 26}, {27, 26}} {
+		discB(img, c[0], c[1], 2.5, func(dx, dy float64) color.RGBA { return p.r.Tree })
 	}
 	return img
 }

@@ -54,8 +54,8 @@ const (
 	landValueEveryNd = 5 // recompute every N days
 )
 
-// Service radii, indexed like Tile.Cover: police, fire, school.
-var serviceRadius = [3]int{10, 10, 12}
+// Service radii, indexed like Tile.Cover: police, fire, school, health.
+var serviceRadius = [4]int{10, 10, 12, 14}
 
 // coverPlateau scales coverage so it stays full near the building.
 const coverPlateau = 1.25

@@ -23,36 +23,49 @@ const (
 	ToolTower
 	ToolCityHall
 	ToolStadium
+	ToolBusStop
+	ToolBusDepot
+	ToolHospital
+	ToolSolar
+	ToolUniversity
+	ToolNuclear
+	ToolMonument
 )
 
 var toolNames = [...]string{"road", "power line", "water pipe", "bulldoze", "residential", "commercial",
 	"industrial", "power plant", "water pump", "police station", "fire station", "school",
-	"park", "wind turbine", "water tower", "city hall", "stadium"}
+	"park", "wind turbine", "water tower", "city hall", "stadium", "bus stop", "bus depot", "hospital",
+	"solar farm", "university", "nuclear plant", "monument"}
 
 // BuildingSpec describes a placeable building and everything it does.
 type BuildingSpec struct {
-	Tool     Tool
-	Kind     Kind
-	Size     int // footprint is Size×Size
-	Cost     float64
-	Upkeep   float64 // per month
-	PowerCap int     // power it supplies
-	WaterCap int     // water it supplies (pumps also need water terrain)
-	PowerUse int
-	WaterUse int
-	Service  int     // index into Tile.Cover, or -1
-	LVBonus  float64 // land value added at its centre, fading over LVRadius
-	LVRadius int
-	Smog     float64 // pollution at its centre, fading over SmogRadius
-	SmogRad  int
-	Unlock   int    // population needed before it can be built
-	Note     string // one line for the build menu
+	Tool          Tool
+	Kind          Kind
+	Size          int // footprint is Size×Size
+	Cost          float64
+	Upkeep        float64 // per month
+	PowerCap      int     // power it supplies
+	WaterCap      int     // water it supplies (pumps also need water terrain)
+	PowerUse      int
+	WaterUse      int
+	Service       int     // index into Tile.Cover, or -1
+	ServiceRadius int     // overrides the service's usual radius when > 0
+	LVBonus       float64 // land value added at its centre, fading over LVRadius
+	LVRadius      int
+	Smog          float64 // pollution at its centre, fading over SmogRadius
+	SmogRad       int
+	Unlock        int    // population needed before it can be built
+	Note          string // one line for the build menu
 }
 
 // Buildings lists placeable buildings in menu order.
 var Buildings = []BuildingSpec{
 	{Tool: ToolPlant, Kind: PowerPlant, Size: 3, Cost: 3000, Upkeep: 100, PowerCap: PlantCapacity, Service: -1,
 		Smog: 0.5, SmogRad: 8, Note: "200 power · smoky"},
+	{Tool: ToolSolar, Kind: SolarFarm, Size: 2, Cost: 2000, Upkeep: 20, PowerCap: 60, Service: -1,
+		Unlock: 500, Note: "60 power · clean"},
+	{Tool: ToolNuclear, Kind: NuclearPlant, Size: 3, Cost: 15000, Upkeep: 400, PowerCap: 1000, WaterUse: 10, Service: -1,
+		Unlock: 5000, Note: "1,000 power · no smog"},
 	{Tool: ToolWind, Kind: WindTurbine, Size: 1, Cost: 500, Upkeep: 10, PowerCap: 25, Service: -1,
 		Note: "25 power · clean"},
 	{Tool: ToolPump, Kind: WaterPump, Size: 2, Cost: 1500, Upkeep: 50, WaterCap: PumpCapacity, PowerUse: 3, Service: -1,
@@ -65,12 +78,22 @@ var Buildings = []BuildingSpec{
 		Note: "fire cover · radius 10"},
 	{Tool: ToolSchool, Kind: School, Size: 2, Cost: 800, Upkeep: 80, PowerUse: 4, WaterUse: 1, Service: 2,
 		Note: "education · radius 12"},
+	{Tool: ToolHospital, Kind: Hospital, Size: 2, Cost: 1500, Upkeep: 120, PowerUse: 6, WaterUse: 2, Service: 3,
+		Unlock: 250, Note: "health · radius 14"},
+	{Tool: ToolUniversity, Kind: University, Size: 3, Cost: 8000, Upkeep: 200, PowerUse: 10, WaterUse: 3, Service: 2,
+		ServiceRadius: 22, LVBonus: 0.08, LVRadius: 16, Unlock: 2500, Note: "education · radius 22"},
+	{Tool: ToolBusStop, Kind: BusStop, Size: 1, Cost: 200, Upkeep: 15, Service: -1,
+		Note: "30% of commuters ride · radius 6"},
+	{Tool: ToolBusDepot, Kind: BusDepot, Size: 2, Cost: 1200, Upkeep: 80, PowerUse: 4, WaterUse: 1, Service: -1,
+		Note: "runs the bus stops"},
 	{Tool: ToolPark, Kind: Park, Size: 1, Cost: 150, Upkeep: 5, Service: -1, LVBonus: 0.15, LVRadius: 4,
 		Note: "land value · radius 4"},
 	{Tool: ToolCityHall, Kind: CityHall, Size: 3, Cost: 4000, Upkeep: 100, PowerUse: 6, WaterUse: 2, Service: -1,
 		LVBonus: 0.12, LVRadius: 16, Unlock: 1000, Note: "+5% taxes · land value"},
 	{Tool: ToolStadium, Kind: Stadium, Size: 3, Cost: 6000, Upkeep: 150, PowerUse: 8, WaterUse: 3, Service: -1,
 		LVBonus: 0.08, LVRadius: 12, Unlock: 2500, Note: "people want to live here"},
+	{Tool: ToolMonument, Kind: Monument, Size: 2, Cost: 10000, Upkeep: 50, Service: -1,
+		LVBonus: 0.25, LVRadius: 10, Unlock: 10000, Note: "the city's pride"},
 }
 
 // Building returns the spec for a building tool.
