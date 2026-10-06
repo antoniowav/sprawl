@@ -38,6 +38,7 @@ func (c *City) daily() {
 	}
 	c.updateStats()
 	c.updateDemand()
+	c.scenarioDaily()
 }
 
 func (c *City) updateStats() {

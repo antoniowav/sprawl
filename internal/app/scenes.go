@@ -210,6 +210,12 @@ func (a *App) formView() *render.NewCityForm {
 		{Label: "seed", Value: nc.seed, Text: !fixed, Disabled: fixed},
 	}
 	if fixed {
+		sc := gm.scenario
+		f.Fields[fMap].Value = sc.Map.String()
+		f.Fields[fSize].Value = render.SizeLabel(sc.Size)
+		f.Fields[fSeed].Value = strconv.FormatInt(sc.Seed, 10)
+	}
+	if fixed {
 		f.Note = wrapText(gm.scenario.Brief, 32)
 	} else {
 		f.Note = []string{"←→ on seed rolls a new map"}

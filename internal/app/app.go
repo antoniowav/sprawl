@@ -101,6 +101,7 @@ type App struct {
 	configPath      string
 	snd             *sound.Player
 	lastPeak        int
+	lastResult      int
 	showGuide       bool
 	sawBudget       bool
 	undos, redos    []*sim.Edit
@@ -387,7 +388,7 @@ func (a *App) installCity(c *sim.City, seed int64) {
 	a.grows = map[sim.Pt]time.Time{}
 	a.chunks.Reset()
 	a.miniDirty = true
-	a.lastPeak = 0
+	a.lastPeak, a.lastResult = 0, c.ScenarioResult
 	a.clearTool()
 	a.cx, a.cy = c.Start.X, c.Start.Y
 	if a.cx == 0 && a.cy == 0 {
@@ -443,6 +444,10 @@ func (a *App) stepSim(now time.Time) float64 {
 		}
 	}
 	a.simAcc = min(a.simAcc, 2) // don't try to catch up after a stall
+	if r := a.city.ScenarioResult; r != a.lastResult {
+		a.lastResult = r
+		a.scenarioOver(r)
+	}
 	if a.city.PeakPop > a.lastPeak {
 		for _, m := range sim.Milestones {
 			if a.lastPeak < m.Pop && a.city.PeakPop >= m.Pop {

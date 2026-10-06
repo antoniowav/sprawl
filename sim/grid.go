@@ -79,11 +79,14 @@ type City struct {
 	Water  Utility
 	Log    []Event
 
-	Map        MapType
-	ScenarioID string
-	Start      Pt  // where the camera opens on a new map
-	PeakPop    int // highest population reached; drives unlocks and milestones
-	History    []Sample
+	Map            MapType
+	ScenarioID     string
+	ScenarioResult int
+	ScenarioEvents int // bitmask of fired events
+	Boosts         []Boost
+	Start          Pt  // where the camera opens on a new map
+	PeakPop        int // highest population reached; drives unlocks and milestones
+	History        []Sample
 
 	Loan       *Loan
 	DebtMonths int

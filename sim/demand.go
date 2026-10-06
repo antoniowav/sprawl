@@ -30,6 +30,9 @@ func (c *City) updateDemand() {
 	if c.has(Stadium) {
 		raw[R] += stadiumPull
 	}
+	for z, b := range c.demandBoost() {
+		raw[z] += b
+	}
 	for z := range c.Demand {
 		target := clamp(raw[z]-TaxMod(c.Tax[z]), -1, 1)
 		c.Demand[z] += demandSmooth * (target - c.Demand[z])

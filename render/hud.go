@@ -187,13 +187,7 @@ func (h *HUD) topBar(dst *ebiten.Image, w int, st HUDState) {
 	y := 3 * s
 	x := h.tag(dst, 0, 0, " "+strings.ToUpper(meta.Name)+" ", h.R.UIAccent, h.R.UIAccentText)
 	x = h.text(dst, "  "+st.City.Name, x, y, h.R.UIText)
-	h.text(dst, " · "+st.City.Rank(), x, y, h.R.UIDim)
-
-	date := sim.Date(st.City.Day)
-	goal := "  " + st.City.Goal()
-	dx := (w - font.Width(date+goal, s)) / 2
-	end := h.text(dst, date, dx, y, h.R.UIText)
-	h.text(dst, goal, end, y, h.R.UIDim)
+	leftEnd := h.text(dst, " · "+st.City.Rank(), x, y, h.R.UIDim)
 
 	// Right side, laid out right to left.
 	pop := commas(int64(st.City.Stats.Residents))
@@ -217,8 +211,24 @@ func (h *HUD) topBar(dst *ebiten.Image, w int, st HUDState) {
 		total += len([]rune(p.s))
 	}
 	x = w - total*h.cw() - s
+	rightStart := x
 	for _, p := range parts {
 		x = h.text(dst, p.s, x, y, p.c)
+	}
+
+	// Date and goal in the middle, pushed right or shortened so they never
+	// run into the name on the left or the money on the right.
+	date := sim.Date(st.City.Day)
+	goal := "  " + st.City.Goal()
+	gap := 2 * h.cw()
+	room := rightStart - leftEnd - 2*gap
+	if font.Width(date+goal, s) > room {
+		goal = ""
+	}
+	dx := max(leftEnd+gap, (w-font.Width(date+goal, s))/2)
+	if font.Width(date, s) <= room {
+		end := h.text(dst, date, dx, y, h.R.UIText)
+		h.text(dst, goal, end, y, h.R.UIDim)
 	}
 }
 
@@ -563,7 +573,11 @@ func (h *HUD) logPane(dst *ebiten.Image, w, bottom int, st HUDState) int {
 	for i, e := range ev {
 		y := y0 + 5*s + i*lh
 		x := h.text(dst, fmt.Sprintf("[day %d] ", e.Day), h.cw(), y, h.R.UIDim)
-		h.text(dst, e.Msg, x, y, [...]color.RGBA{h.R.UIText, h.R.UIWarn, h.R.UIErr}[e.Level])
+		msg := []rune(e.Msg)
+		if fit := (w-x)/h.cw() - 1; len(msg) > fit && fit > 1 {
+			msg = append(msg[:fit-1], '…')
+		}
+		h.text(dst, string(msg), x, y, [...]color.RGBA{h.R.UIText, h.R.UIWarn, h.R.UIErr}[e.Level])
 	}
 	return y0
 }

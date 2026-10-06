@@ -87,7 +87,7 @@ func (a *App) load(name string) {
 		return
 	}
 	a.city = c
-	a.lastPeak = c.PeakPop
+	a.lastPeak, a.lastResult = c.PeakPop, c.ScenarioResult
 	a.saveName, a.unsaved = saveName(name), false
 	if a.saveName == "autosave" {
 		a.saveName = "" // don't let Ctrl+S overwrite the autosave

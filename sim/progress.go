@@ -96,6 +96,9 @@ func (c *City) record() {
 
 // Goal is the line shown in the top bar.
 func (c *City) Goal() string {
+	if g, ok := c.scenarioGoal(); ok {
+		return g
+	}
 	m, ok := c.NextMilestone()
 	if !ok {
 		return "every milestone reached"
