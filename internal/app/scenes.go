@@ -346,10 +346,10 @@ func wrapText(s string, n int) []string {
 
 // --- pause menu ---
 
-var pauseItems = []string{"Resume", "Save", "Save as…", "Open…", "New city…", "Budget", "Statistics", "Settings", "Quit to title", "Quit"}
+var pauseItems = []string{"Resume", "Save", "Save as…", "Open…", "New city…", "Budget", "Statistics", "Achievements", "Settings", "Quit to title", "Quit"}
 
 func (a *App) pauseEntries() []render.MenuEntry {
-	keys := []string{"Esc", "Ctrl+S", "Ctrl+Shift+S", "Ctrl+O", "Ctrl+N", "Ctrl+B", "Ctrl+G", "", "", "Ctrl+Q"}
+	keys := []string{"Esc", "Ctrl+S", "Ctrl+Shift+S", "Ctrl+O", "Ctrl+N", "Ctrl+B", "Ctrl+G", "F5", "", "", "Ctrl+Q"}
 	es := make([]render.MenuEntry, len(pauseItems))
 	for i, l := range pauseItems {
 		es[i] = render.MenuEntry{Label: l, Detail: keys[i]}
@@ -406,10 +406,12 @@ func (a *App) updatePause() {
 	case 6:
 		a.mode = modeStats
 	case 7:
-		a.openSettings()
+		a.mode = modeAchievements
 	case 8:
-		a.guard("Quit to the title screen?", a.showTitle)
+		a.openSettings()
 	case 9:
+		a.guard("Quit to the title screen?", a.showTitle)
+	case 10:
 		a.requestQuit()
 	}
 }

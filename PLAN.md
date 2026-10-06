@@ -172,17 +172,17 @@ scenarios, timelapse title screen, photo mode, building inspector, advisor
 tips, achievements; plus map types, more buildings, manual day/night,
 key editor, minimap, bigger maps, zoom toward the cursor.
 
-## M18 — Comfort
+## M18 — Comfort ✅ (2026-10-06)
 Wheel zoom keeps the tile under the mouse in place. Day/night mode:
 cycle, always day, always night, frozen (setting + `n` key). Map sizes up
 to 256×256. Minimap (`m`), click or drag to jump.
 
-## M19 — Map types and bridges
+## M19 — Map types and bridges ✅ (2026-10-06)
 River valley, coast, lakes, islands, highlands (rock you can't build on).
 Roads may cross water as bridges ($60/tile). Chosen in the new-city form
 with the preview.
 
-## M20 — Traffic
+## M20 — Traffic ✅ (2026-10-06)
 Monthly commute routing on the road graph: every developed home sends its
 workers along the shortest road path to the nearest jobs; load per road
 tile vs capacity gives congestion. Congestion lowers land value along the
@@ -190,23 +190,23 @@ road; homes that can't reach any job by road grow worse. Traffic overlay.
 Pixel cars on busy roads. Bus stops (need a bus depot) take a share of
 trips off the road.
 
-## M21 — More buildings
+## M21 — More buildings ✅ (2026-10-06)
 Hospital (health coverage), bus stop, bus depot, solar farm (unlocks at
 500), university (2,500), nuclear plant (5,000, no smog), monument
 (10,000).
 
-## M22 — Scenarios
+## M22 — Scenarios ✅ (2026-10-06)
 Game mode in the new-city form: Sandbox or a scenario. Boomtown: a factory
 announces 2,000 jobs; reach 2,000 workers and a positive budget by Y5.
 Island: islands map, tight money, tourism boom in Y3; reach 3,000 people
 by Y10. Goal panel with days left; win and lose screens; saved with the
 city.
 
-## M23 — Timelapse title
+## M23 — Timelapse title ✅ (2026-10-06)
 Behind the title, a city builds itself on a fresh map: roads, zones,
 plant, pipes, services, growth with rising buildings, sped-up day and
 night, slow camera drift.
 
-## M24 — Extras
+## M24 — Extras ✅ (2026-10-06)
 Key-binding editor in Settings; photo mode (F12 → ~/Pictures/Sprawl);
 building inspector (click a building); advisor tips; achievements.

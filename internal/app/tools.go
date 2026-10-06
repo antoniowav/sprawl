@@ -46,6 +46,12 @@ func (a *App) do(p input.Press) {
 		a.redo()
 		return
 	}
+	if a.mode == modeAchievements {
+		if act == input.Cancel || act == input.Achievements || act == input.Apply {
+			a.mode = modeNormal
+		}
+		return
+	}
 	if a.mode == modeHelp || a.mode == modeBudget || a.mode == modeStats {
 		if act == input.Help || act == input.Cancel || act == input.Apply {
 			a.mode = modeNormal
@@ -113,6 +119,13 @@ func (a *App) do(p input.Press) {
 		a.flash(sim.Info, "day and night: %s", timeLabel(a.cfg.TimeOfDay))
 	case input.Minimap:
 		a.showMinimap = !a.showMinimap
+	case input.Photo:
+		a.photoPending = true
+		a.snd.Play(sound.Click)
+	case input.Achievements:
+		a.mode = modeAchievements
+	case input.Inspect:
+		a.inspectOn, a.inspectPt = true, sim.Pt{X: a.cx, Y: a.cy}
 	case input.Guide:
 		a.showGuide = !a.showGuide
 	case input.ToggleLog:
@@ -133,6 +146,10 @@ func (a *App) do(p input.Press) {
 	case input.ZonePrefix:
 		a.zonePending = true
 	case input.Apply:
+		if !a.hasTool {
+			a.inspectOn, a.inspectPt = true, sim.Pt{X: a.cx, Y: a.cy}
+			return
+		}
 		a.apply()
 	case input.BuildMenu:
 		a.mode = modeMenu
@@ -167,6 +184,10 @@ func (a *App) do(p input.Press) {
 			a.paint = false
 		case a.hasTool:
 			a.clearTool()
+		case a.toastMsg != "":
+			a.toastMsg = ""
+		case a.inspectOn:
+			a.inspectOn = false
 		default:
 			a.msg = ""
 			a.mode, a.pauseSel = modePause, 0
@@ -348,6 +369,7 @@ func (a *App) needTool() bool {
 
 func (a *App) setTool(t sim.Tool) {
 	a.tool, a.hasTool = t, true
+	a.inspectOn = false
 	a.paint = false
 	switch {
 	case t == sim.ToolPipe && !a.underground:
@@ -474,6 +496,8 @@ func (a *App) updateLeftButton(mx, my int) {
 		if a.hasTool {
 			a.drag, a.visual, a.paint = true, false, false
 			a.anchor = sim.Pt{X: tx, Y: ty}
+		} else {
+			a.inspectOn, a.inspectPt = true, sim.Pt{X: tx, Y: ty}
 		}
 	case a.drag && ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft):
 		if tx != a.cx || ty != a.cy {

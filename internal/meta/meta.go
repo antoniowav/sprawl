@@ -12,7 +12,7 @@ import (
 const Name = "Sprawl"
 
 // Version is overridden at build time with -ldflags "-X .../meta.Version=...".
-var Version = "0.1.0-dev"
+var Version = "0.2.0-dev"
 
 // ID is the lowercase name used for directories and the binary.
 func ID() string { return strings.ToLower(Name) }

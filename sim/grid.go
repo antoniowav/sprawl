@@ -90,6 +90,7 @@ type City struct {
 
 	Loan       *Loan
 	DebtMonths int
+	EverInDebt bool
 	Bankrupt   bool
 	LastMonth  Ledger
 

@@ -572,6 +572,18 @@ map_size = 128
 
 ---
 
+### 6.9 Traffic (added in 0.2.0)
+Every land-value update (5 days) a breadth-first search from all roads
+touching developed C/I tiles gives each road tile its distance to work.
+Each developed home starts at its adjacent road nearest to work and walks
+downhill, adding `0.5 · residents` commuters (× 0.7 within 6 tiles of a bus
+stop, if a powered bus depot exists) to each road tile on the way.
+`congestion = load / 150`. Tiles next to a road with congestion above 0.5
+lose up to 0.15 land value. Homes with no road path to jobs get −0.3 on
+their growth score (only once the city has jobs); commutes over 40 tiles
+get −0.15. Cars are cosmetic: drawn on straight road tiles, denser and
+slower with congestion.
+
 ## 12. Decisions
 
 Settled 2026-10-06 (the user asked me to pick; they judge by playing):

@@ -63,3 +63,16 @@ func TestOverrides(t *testing.T) {
 		t.Errorf("help keys %v", got)
 	}
 }
+
+func TestKeyNameRoundTrip(t *testing.T) {
+	for _, k := range []ebiten.Key{ebiten.KeyA, ebiten.KeyZ, ebiten.KeyDigit3, ebiten.KeyArrowLeft, ebiten.KeyF12, ebiten.KeyEnter} {
+		name := KeyName(k)
+		b, err := ParseKey("Ctrl+" + name)
+		if err != nil || b.Key != k {
+			t.Errorf("%v -> %q -> %+v %v", k, name, b, err)
+		}
+	}
+	if KeyName(ebiten.KeyShift) != "" {
+		t.Error("modifier got a name")
+	}
+}

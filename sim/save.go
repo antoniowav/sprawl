@@ -48,6 +48,7 @@ type saveFile struct {
 	ScenarioResult int
 	ScenarioEvents int
 	Boosts         []Boost
+	EverInDebt     bool
 
 	Terrain, Kind, Level, Variant, Flags []byte
 	Anchor                               []int32
@@ -77,7 +78,7 @@ func (c *City) Save(w io.Writer) error {
 		Funds: c.Funds, Tax: c.Tax, Demand: c.Demand, Stats: c.Stats, Power: c.Power, Water: c.Water,
 		Log: c.Log, Loan: c.Loan, DebtMonths: c.DebtMonths, Bankrupt: c.Bankrupt, LastMonth: c.LastMonth,
 		HighDays: c.highDays, LvDirty: c.lvDirty, Brownout: c.brownout, WaterShort: c.waterShort,
-		YearNet: c.yearNet, RNG: rng, PeakPop: c.PeakPop, History: c.History, Map: c.Map, Start: c.Start, ScenarioID: c.ScenarioID, ScenarioResult: c.ScenarioResult, ScenarioEvents: c.ScenarioEvents, Boosts: c.Boosts,
+		YearNet: c.yearNet, RNG: rng, PeakPop: c.PeakPop, History: c.History, Map: c.Map, Start: c.Start, ScenarioID: c.ScenarioID, ScenarioResult: c.ScenarioResult, ScenarioEvents: c.ScenarioEvents, Boosts: c.Boosts, EverInDebt: c.EverInDebt,
 		Terrain: make([]byte, n), Kind: make([]byte, n), Level: make([]byte, n), Variant: make([]byte, n),
 		Flags: make([]byte, n), Anchor: make([]int32, n), LandValue: make([]float32, n),
 		Pollution: make([]float32, n), UnpoweredDays: make([]uint16, n),
@@ -149,7 +150,7 @@ func Load(r io.Reader) (*City, error) {
 		Tax: f.Tax, Demand: f.Demand, Stats: f.Stats, Power: f.Power, Water: f.Water, Log: f.Log,
 		Loan: f.Loan, DebtMonths: f.DebtMonths, Bankrupt: f.Bankrupt, LastMonth: f.LastMonth,
 		highDays: f.HighDays, lvDirty: f.LvDirty, brownout: f.Brownout, waterShort: f.WaterShort,
-		yearNet: f.YearNet, Tiles: make([]Tile, n), PeakPop: f.PeakPop, History: f.History, Map: f.Map, Start: f.Start, ScenarioID: f.ScenarioID, ScenarioResult: f.ScenarioResult, ScenarioEvents: f.ScenarioEvents, Boosts: f.Boosts,
+		yearNet: f.YearNet, Tiles: make([]Tile, n), PeakPop: f.PeakPop, History: f.History, Map: f.Map, Start: f.Start, ScenarioID: f.ScenarioID, ScenarioResult: f.ScenarioResult, ScenarioEvents: f.ScenarioEvents, Boosts: f.Boosts, EverInDebt: f.EverInDebt,
 	}
 	if c.LastMonth.Buildings == nil {
 		c.LastMonth.Buildings = map[Kind]float64{}

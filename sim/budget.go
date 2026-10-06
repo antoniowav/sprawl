@@ -128,6 +128,7 @@ func (c *City) monthly() {
 		return
 	}
 	c.DebtMonths++
+	c.EverInDebt = true
 	switch {
 	case c.DebtMonths == 1:
 		c.Logf(Err, "in debt: building is blocked until funds are positive")

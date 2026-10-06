@@ -56,6 +56,8 @@ var settings = []setting{
 		a.cfg.Volume = max(0, min(100, a.cfg.Volume+10*d))
 		a.snd.SetVolume(float64(a.cfg.Volume) / 100)
 	}},
+	{"Advisor tips", func(c *config.Config) string { return onOff(c.Tips) },
+		func(a *App, d int) { a.cfg.Tips = !a.cfg.Tips }},
 	{"Animations", func(c *config.Config) string { return onOff(c.Animations) },
 		func(a *App, d int) { a.cfg.Animations = !a.cfg.Animations }},
 	{"Day and night", func(c *config.Config) string { return timeLabel(c.TimeOfDay) },
@@ -93,16 +95,19 @@ func (a *App) closeSettings() {
 }
 
 func (a *App) settingsEntries() []render.MenuEntry {
-	es := make([]render.MenuEntry, len(settings)+1)
+	es := make([]render.MenuEntry, len(settings)+2)
 	for i, s := range settings {
 		es[i] = render.MenuEntry{Label: s.label, Detail: "< " + s.show(&a.cfg) + " >"}
 	}
-	es[len(settings)] = render.MenuEntry{Label: "Done", Detail: "Esc"}
+	es[len(settings)] = render.MenuEntry{Label: "Keys…", Detail: "Enter"}
+	es[len(settings)+1] = render.MenuEntry{Label: "Done", Detail: "Esc"}
 	return es
 }
 
 func (a *App) updateSettings() {
-	n := len(settings) + 1
+	n := len(settings) + 2
+	keysRow := len(settings)
+	done := len(settings) + 1
 	step := func(d int) {
 		if a.settingSel < len(settings) {
 			settings[a.settingSel].step(a, d)
@@ -121,8 +126,12 @@ func (a *App) updateSettings() {
 		case input.MoveRight:
 			step(1)
 		case input.Apply:
-			if a.settingSel == len(settings) {
+			switch a.settingSel {
+			case done:
 				a.closeSettings()
+				return
+			case keysRow:
+				a.mode, a.keySel, a.keyCapture = modeKeys, 0, false
 				return
 			}
 			step(1)
@@ -136,8 +145,12 @@ func (a *App) updateSettings() {
 			a.settingSel, a.dirty = i, true
 		}
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			if i == len(settings) {
+			switch i {
+			case done:
 				a.closeSettings()
+				return
+			case keysRow:
+				a.mode, a.keySel, a.keyCapture = modeKeys, 0, false
 				return
 			}
 			step(1)

@@ -44,16 +44,16 @@ road that leads to a plant has power; use lines to reach the rest.
 | `h j k l` / arrows | move cursor |
 | `H J K L` / Shift+arrows | move 8 tiles |
 | `c` | centre camera on cursor |
-| `+` `-` / scroll | zoom (1×–4×, always crisp) |
+| `+` `-` / scroll | zoom (1×–4×, always crisp; the wheel zooms toward the mouse) |
 | right or middle drag | pan |
 | `r` `p` `w` `d` | road, power line, water pipe, bulldoze |
 | `z` then `r` `c` `i` | residential, commercial, industrial zone |
-| `b` | buildings: power plant, water pump, police, fire, school |
+| `b` | buildings menu |
 | `Enter` | apply the tool at the cursor |
 | `v` … `Enter` | visual mode: rectangle (zones, bulldoze) or L-path (roads, lines, pipes); `o` swaps the corner |
 | `Shift+Enter` | paint mode: every move applies the tool |
 | left click / drag | apply the tool / select like visual mode |
-| `o` | cycle overlays: power, water, police, fire, school, land value, pollution |
+| `o` | cycle overlays: power, water, traffic, police, fire, school, health, land value, pollution |
 | `u` | underground view (pipes); in it, bulldoze removes pipes |
 | `Space`, `1` `2` `3` | pause, speed |
 | `Tab` | side panel |
@@ -64,6 +64,9 @@ road that leads to a plant has power; use lines to reach the rest.
 | `Ctrl+B`, `Ctrl+G` | budget, statistics charts |
 | `F1` | getting-started guide |
 | `Esc` with nothing selected | menu: save, open, settings, quit to title |
+| click / `i` | inspect a tile: what it holds and why it isn't growing |
+| `m`, `n` | minimap, day/night mode |
+| `F5`, `F12` | achievements, photo (PNG in ~/Pictures/Sprawl) |
 | `:` | command palette (Tab completes, ↑↓ history) |
 | `?` | key overlay (generated from your keymap) |
 | `Esc` | back out: visual → paint → tool |
@@ -82,14 +85,26 @@ road that leads to a plant has power; use lines to reach the rest.
 
 Twelve months in debt and the city goes bankrupt.
 
+### Maps, traffic and scenarios
+
+New cities pick a map: river valley, coast, lakes, islands or highlands,
+from 96×96 up to 256×256. Roads cross water as bridges ($60 a tile).
+Homes send their commuters along the roads to the nearest jobs: busy roads
+fill with cars, jammed roads lower land value, and homes with no road to
+any job stop growing. Bus stops near homes (with a bus depot somewhere)
+take 30% of commuters off the road. Two scenarios, Boomtown and Island,
+give you a goal and a deadline, and something happens partway through.
+
 ### Buildings and goals
 
-Power plant (smoky, 200 power), wind turbine (clean, 25), water pump (by
+Power plant (smoky, 200 power), wind turbine (clean, 25), solar farm
+(60, from 500 people), nuclear plant (1,000, from 5,000), water pump (by
 water, 150), water tower (anywhere, 40), police, fire station, school,
-park. Population milestones pay a grant and promote the settlement from
-hamlet to metropolis; the city hall unlocks at 1,000 people (+5 % taxes)
-and the stadium at 2,500 (people want to live near it). The next goal is
-always in the top bar.
+hospital (from 250), university (from 2,500), park, bus stop and depot,
+city hall (from 1,000; +5 % taxes), stadium (from 2,500) and a monument
+(from 10,000). Population milestones pay a grant and promote the
+settlement from hamlet to metropolis. The next goal is always in the top
+bar, and achievements (F5) are kept across all your cities.
 
 ## Files
 

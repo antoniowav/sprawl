@@ -57,6 +57,9 @@ const (
 	Stats         Action = "stats"
 	TimeOfDay     Action = "time_of_day"
 	Minimap       Action = "minimap"
+	Photo         Action = "photo"
+	Achievements  Action = "achievements"
+	Inspect       Action = "inspect"
 )
 
 // Def is a default binding with its help text.
@@ -85,9 +88,12 @@ var Defaults = []Def{
 	{TogglePanel, []string{"Tab"}, "side panel", "view"},
 	{Budget, []string{"Ctrl+b", "F3"}, "budget", "view"},
 	{Stats, []string{"Ctrl+g", "F4"}, "statistics", "view"},
-	{Guide, []string{"F1"}, "getting-started guide", "view"},
-	{TimeOfDay, []string{"n"}, "day / night / cycle", "view"},
+	{Guide, []string{"F1"}, "guide", "view"},
+	{TimeOfDay, []string{"n"}, "day/night mode", "view"},
 	{Minimap, []string{"m"}, "minimap", "view"},
+	{Inspect, []string{"i"}, "inspect the tile", "view"},
+	{Photo, []string{"F12"}, "photo (PNG)", "view"},
+	{Achievements, []string{"F5"}, "achievements", "view"},
 	{ToggleLog, []string{"e", "F2"}, "event log", "view"},
 	{Road, []string{"r"}, "road", "build"},
 	{PowerLine, []string{"p"}, "power line", "build"},
@@ -133,6 +139,26 @@ var namedKeys = map[string]ebiten.Key{
 	"f1": ebiten.KeyF1, "f2": ebiten.KeyF2, "f3": ebiten.KeyF3, "f4": ebiten.KeyF4,
 	"f5": ebiten.KeyF5, "f6": ebiten.KeyF6, "f7": ebiten.KeyF7, "f8": ebiten.KeyF8,
 	"f9": ebiten.KeyF9, "f10": ebiten.KeyF10, "f11": ebiten.KeyF11, "f12": ebiten.KeyF12,
+}
+
+// KeyName is the binding name of a physical key ("a", "7", "Left", "F2"),
+// or "" for keys that can't be bound (modifiers).
+func KeyName(k ebiten.Key) string {
+	switch {
+	case k >= ebiten.KeyA && k <= ebiten.KeyZ:
+		return string(rune('a' + (k - ebiten.KeyA)))
+	case k >= ebiten.KeyDigit0 && k <= ebiten.KeyDigit9:
+		return string(rune('0' + (k - ebiten.KeyDigit0)))
+	}
+	for name, key := range namedKeys {
+		if key == k && name != "escape" {
+			if len(name) > 1 && name[0] == 'f' && name[1] >= '0' && name[1] <= '9' {
+				return "F" + name[1:]
+			}
+			return strings.ToUpper(name[:1]) + name[1:]
+		}
+	}
+	return ""
 }
 
 // ParseKey parses "h", "H", ":", "Space", "Left", "Shift+Enter", "F2",

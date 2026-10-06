@@ -28,6 +28,7 @@ type Config struct {
 	AutosaveMonths int                 `toml:"autosave_months"`
 	MapSize        int                 `toml:"map_size"`
 	Volume         int                 `toml:"volume"`
+	Tips           bool                `toml:"tips"`
 	Keys           map[string][]string `toml:"keys"`
 }
 
@@ -46,6 +47,7 @@ func Default() Config {
 		AutosaveMonths: 6,
 		MapSize:        128,
 		Volume:         60,
+		Tips:           true,
 	}
 }
 
@@ -62,6 +64,7 @@ watch_theme = true      # follow Omarchy theme changes live
 autosave_months = 6     # 0 = off
 map_size = 128
 volume = 60             # sound effects, 0..100 (0 = off)
+tips = true             # advisor tips
 
 # Key overrides: action = ["key", ...]. See ? in game for action names.
 [keys]
@@ -125,11 +128,12 @@ watch_theme = %t      # follow Omarchy theme changes live
 autosave_months = %d     # 0 = off
 map_size = %d
 volume = %d             # sound effects, 0..100 (0 = off)
+tips = %t             # advisor tips
 
 # Key overrides: action = ["key", ...]. See ? in game for action names.
 [keys]
 `, c.UIScale, c.Zoom, c.TicksPerSecond, c.PauseUnfocused, c.LowPower, c.Animations, c.TimeOfDay,
-		c.WatchTheme, c.AutosaveMonths, c.MapSize, c.Volume)
+		c.WatchTheme, c.AutosaveMonths, c.MapSize, c.Volume, c.Tips)
 	names := make([]string, 0, len(c.Keys))
 	for k := range c.Keys {
 		names = append(names, k)

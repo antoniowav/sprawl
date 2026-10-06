@@ -41,6 +41,8 @@ const (
 	modePause
 	modeStats
 	modeSettings
+	modeKeys
+	modeAchievements
 )
 
 // Options are the command-line settings.
@@ -90,6 +92,20 @@ type App struct {
 	overlay         render.Overlay
 	menuSel         int
 	dlg             *dialog
+	dbgUpdates      int
+	dbgDraws        int
+	dbgSince        time.Time
+	toastMsg        string
+	toastHi         bool
+	toastUntil      time.Time
+	tipShown        map[string]int
+	unlocked        map[string]string
+	inspectOn       bool
+	inspectPt       sim.Pt
+	photoPending    bool
+	photoDone       chan photoResult
+	keySel          int
+	keyCapture      bool
 	showMinimap     bool
 	mini            *ebiten.Image
 	miniPix         []byte
@@ -163,6 +179,9 @@ func New(o Options) *App {
 		grows:       map[sim.Pt]time.Time{},
 		seed:        o.Seed,
 		toolHover:   -1,
+		tipShown:    map[string]int{},
+		unlocked:    loadAchievements(),
+		photoDone:   make(chan photoResult, 4),
 		showMinimap: true,
 		chunks:      render.NewChunks(),
 		configPath:  o.ConfigPath,
@@ -212,6 +231,9 @@ func New(o Options) *App {
 			continue
 		case "@settings":
 			a.openSettings()
+			continue
+		case "@keys":
+			a.mode, a.keySel = modeKeys, 12
 			continue
 		case "@start":
 			a.startCity()
@@ -297,6 +319,13 @@ func (a *App) loadTheme(reload bool) {
 // Update runs at 60 TPS while focused.
 func (a *App) Update() error {
 	now := time.Now()
+	if os.Getenv("SPRAWL_DEBUG_FPS") != "" {
+		a.dbgUpdates++
+		if now.Sub(a.dbgSince) > 5*time.Second {
+			fmt.Fprintf(os.Stderr, "updates %d draws %d in %.1fs\n", a.dbgUpdates, a.dbgDraws, now.Sub(a.dbgSince).Seconds())
+			a.dbgUpdates, a.dbgDraws, a.dbgSince = 0, 0, now
+		}
+	}
 	if f := ebiten.IsFocused(); f != a.focused {
 		a.focused, a.dirty = f, true
 	}
@@ -312,6 +341,8 @@ func (a *App) Update() error {
 		a.updateDialog()
 	case a.mode == modeSettings:
 		a.updateSettings()
+	case a.mode == modeKeys:
+		a.updateKeys()
 	case a.scene == sceneTitle:
 		dt := 0.0
 		if !a.lastUpdate.IsZero() {
@@ -360,6 +391,10 @@ func (a *App) Update() error {
 		a.animFrame++
 		a.nextAnim = now.Add(250 * time.Millisecond)
 		a.dirty = true
+	}
+	a.pollPhoto()
+	if a.toastMsg != "" && now.After(a.toastUntil) {
+		a.toastMsg, a.dirty = "", true
 	}
 	if a.msg != "" && now.After(a.msgUntil) {
 		a.msg, a.dirty = "", true
@@ -447,6 +482,9 @@ func (a *App) stepSim(now time.Time) float64 {
 			}
 		}
 		a.autosave(prevDay)
+		if a.city.Day/sim.DaysPerMonth != prevDay/sim.DaysPerMonth {
+			a.monthly()
+		}
 		// The screen only needs a new frame when something visible moved:
 		// a building changed or the date (and with it the HUD) advanced.
 		if len(changed) > 0 || a.city.Day != prevDay {
@@ -643,6 +681,7 @@ func (a *App) Draw(screen *ebiten.Image) {
 	if !a.dirty && a.shotPath == "" {
 		return
 	}
+	a.dbgDraws++
 	a.dirty = false
 	cx, cy := a.cx, a.cy
 	if a.scene != sceneGame {
@@ -683,8 +722,28 @@ func (a *App) Draw(screen *ebiten.Image) {
 			a.hud.Stats(screen, a.city)
 		}
 	}
+	if a.scene == sceneGame && a.mode == modeNormal {
+		if a.inspectOn {
+			a.hud.Inspector(screen, a.city.Inspect(a.inspectPt.X, a.inspectPt.Y), a.h-a.hud.BottomBars(a.showLog))
+		}
+		a.hud.Toast(screen, a.toastMsg, a.toastHi)
+	}
 	if a.mode == modeSettings {
 		a.hud.Settings(screen, a.settingsEntries(), a.settingSel, tildePath(a.configPath))
+	}
+	if a.mode == modeKeys {
+		capturing := ""
+		if a.keyCapture {
+			capturing = a.km.Defs[a.keySel].Help
+		}
+		a.hud.KeyEditor(screen, a.keyRows(), a.keySel, capturing)
+	}
+	if a.mode == modeAchievements {
+		a.hud.Achievements(screen, a.achievementRows())
+	}
+	if a.photoPending {
+		a.photoPending = false
+		a.takePhoto(view)
 	}
 
 	if a.shotPath != "" {

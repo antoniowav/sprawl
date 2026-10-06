@@ -78,8 +78,9 @@ type HUD struct {
 	ToolHits []image.Rectangle
 	Blocks   []image.Rectangle
 
-	layer   *ebiten.Image
-	lastKey string
+	layer      *ebiten.Image
+	lastKey    string
+	baseBlocks int
 
 	MiniRect image.Rectangle // where the minimap was drawn
 }
@@ -101,8 +102,21 @@ func (h *HUD) DrawCached(dst *ebiten.Image, st HUDState, key string) {
 		h.layer.Clear()
 		h.Draw(h.layer, st)
 		h.lastKey = key
+		h.baseBlocks = len(h.Blocks)
 	}
+	// Panels drawn outside the cache (toast, inspector) add their blocks
+	// every frame; drop last frame's.
+	h.Blocks = h.Blocks[:min(h.baseBlocks, len(h.Blocks))]
 	dst.DrawImage(h.layer, nil)
+}
+
+// BottomBars is the height of the status line plus the log pane if shown.
+func (h *HUD) BottomBars(log bool) int {
+	n := h.barH()
+	if log {
+		n += logLines*h.lh() + 8*h.S
+	}
+	return n
 }
 
 // Invalidate forces the next DrawCached to redraw (theme or scale change).
@@ -603,9 +617,14 @@ func (h *HUD) help(dst *ebiten.Image, w, ht int, rows []HelpRow) {
 		}
 		lines = append(lines, line{keys: r.Keys, desc: r.Desc})
 	}
-	split := len(lines) / 2
-	for split < len(lines) && !lines[split].head {
-		split++
+	// Split at the group boundary that balances the two columns best.
+	split, best := len(lines), len(lines)
+	for i, l := range lines {
+		if l.head && i > 0 {
+			if worst := max(i, len(lines)-i); worst < best {
+				split, best = i, worst
+			}
+		}
 	}
 	cols := [][]line{lines[:split], lines[split:]}
 	nrows := max(len(cols[0]), len(cols[1]))
