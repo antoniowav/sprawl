@@ -237,6 +237,21 @@ func New(o Options) *App {
 		case "@keys":
 			a.mode, a.keySel = modeKeys, 12
 			continue
+		case "@bigdemo":
+			x, y := a.cx, a.cy
+			a.city.Funds += 1e6
+			a.city.Apply(sim.ToolRoad, sim.RectPts(sim.Pt{X: x - 9, Y: y}, sim.Pt{X: x + 9, Y: y}), false)
+			a.city.Apply(sim.ToolRoad, sim.RectPts(sim.Pt{X: x - 9, Y: y + 3}, sim.Pt{X: x + 9, Y: y + 3}), false)
+			for i, z := range []sim.Tool{sim.ToolZoneR, sim.ToolZoneR, sim.ToolZoneC, sim.ToolZoneC, sim.ToolZoneI, sim.ToolZoneI} {
+				bx := x - 8 + i*3
+				a.city.Apply(z, sim.RectPts(sim.Pt{X: bx, Y: y + 1}, sim.Pt{X: bx + 1, Y: y + 2}), false)
+				a.city.ForceBig(bx, y+1)
+				for _, p := range sim.RectPts(sim.Pt{X: bx, Y: y + 1}, sim.Pt{X: bx + 1, Y: y + 2}) {
+					a.city.At(p.X, p.Y).Variant = uint8(i % 2)
+				}
+			}
+			a.chunks.Reset()
+			continue
 		case "@start":
 			a.startCity()
 			continue

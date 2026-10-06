@@ -311,10 +311,13 @@ func (c *City) applyTile(t Tool, tl *Tile, pipesOnly bool) {
 // footprint lists the tiles of the building anchored at index a.
 func (c *City) footprint(a int32) []Pt {
 	ax, ay := int(a)%c.W, int(a)/c.W
-	spec, _ := SpecOf(c.Tiles[a].Kind)
+	size := 2 // big zone buildings
+	if spec, ok := SpecOf(c.Tiles[a].Kind); ok {
+		size = spec.Size
+	}
 	var pts []Pt
-	for y := ay; y < ay+spec.Size; y++ {
-		for x := ax; x < ax+spec.Size; x++ {
+	for y := ay; y < ay+size; y++ {
+		for x := ax; x < ax+size; x++ {
 			pts = append(pts, Pt{x, y})
 		}
 	}

@@ -29,6 +29,9 @@ type Atlas struct {
 	Lights  [3][3][4]*ebiten.Image
 	CivicLt map[sim.Kind]*ebiten.Image
 	Chimney [4][]image.Point
+	Big     [3][2]*ebiten.Image
+	BigLt   [3][2]*ebiten.Image
+	BigStk  [2][]image.Point
 	Civic   map[sim.Kind]*ebiten.Image
 	Stacks  []image.Point // power plant smoke sources
 	NoPower *ebiten.Image
@@ -71,6 +74,11 @@ func NewAtlas(r theme.Roles) *Atlas {
 		}
 	}
 	a.Chimney = b.Chimneys
+	for z := range b.Big {
+		a.up(a.Big[z][:], b.Big[z][:])
+		a.up(a.BigLt[z][:], b.BigLights[z][:])
+	}
+	a.BigStk = b.BigChimneys
 	cv := sprites.BuildCivic(r)
 	a.Civic, a.CivicLt = map[sim.Kind]*ebiten.Image{}, map[sim.Kind]*ebiten.Image{}
 	for k, name := range civicNames {

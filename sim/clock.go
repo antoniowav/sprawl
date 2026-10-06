@@ -57,6 +57,9 @@ func (c *City) updateStats() {
 		case ZoneI:
 			n = indCap[t.Level]
 		}
+		if t.Anchor >= 0 {
+			n = int(float64(n) * bigBonus)
+		}
 		if !t.Powered {
 			n /= 2
 		}

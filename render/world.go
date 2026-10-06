@@ -99,7 +99,7 @@ func DrawWorld(dst *ebiten.Image, v WorldView) (animated bool) {
 			continue
 		}
 		t := c.At(p.X, p.Y)
-		if !t.IsZone() || t.Level == 0 {
+		if !t.IsZone() || t.Level == 0 || t.IsBig() {
 			continue
 		}
 		// Rise from the ground: show the bottom rows only.
@@ -117,6 +117,12 @@ func DrawWorld(dst *ebiten.Image, v WorldView) (animated bool) {
 			for tx := max(0, x0-2); tx <= x1; tx++ {
 				t := c.At(tx, ty)
 				switch {
+				case t.Kind == sim.ZoneI && t.IsBig():
+					if int(t.Anchor) == ty*c.W+tx {
+						for _, p := range v.Atlas.BigStk[t.Variant%2] {
+							*v.Emitters = append(*v.Emitters, image.Pt(tx*TileSize+p.X, ty*TileSize+p.Y))
+						}
+					}
 				case t.Kind == sim.ZoneI && t.Level == 3:
 					for _, p := range v.Atlas.Chimney[t.Variant%4] {
 						*v.Emitters = append(*v.Emitters, image.Pt(tx*TileSize+p.X, ty*TileSize+p.Y))
@@ -199,6 +205,10 @@ func drawNight(dst *ebiten.Image, v WorldView, x0, y0, x1, y1 int, draw func(*eb
 		for tx := max(0, x0-2); tx <= x1; tx++ {
 			t := c.At(tx, ty)
 			switch {
+			case t.IsBig() && t.Powered:
+				if int(t.Anchor) == ty*c.W+tx {
+					draw(v.Atlas.BigLt[t.Kind-sim.ZoneR][t.Variant%2], tx, ty)
+				}
 			case t.IsZone() && t.Level > 0 && t.Powered && tx >= x0 && ty >= y0:
 				if v.Grow != nil && v.Grow(tx, ty) < 1 {
 					continue
@@ -223,6 +233,9 @@ func drawIcons(dst *ebiten.Image, v WorldView, x0, y0, x1, y1, ox, oy, ts int) b
 		for tx := x0; tx <= x1; tx++ {
 			t := c.At(tx, ty)
 			var img *ebiten.Image
+			if t.IsBig() && int(t.Anchor) != ty*c.W+tx {
+				continue // one icon per big building, on its anchor
+			}
 			switch {
 			case t.IsZone() && t.Level > 0 && !t.Powered,
 				t.IsBuilding() && int(t.Anchor) == ty*c.W+tx && !t.Powered:
@@ -270,7 +283,7 @@ func drawStatic(draw func(*ebiten.Image, int, int), at *Atlas, c *sim.City, x0, 
 			case t.IsZone():
 				z := t.Kind - sim.ZoneR
 				draw(at.Lot[z], tx, ty)
-				if t.Level > 0 && !growing(tx, ty) {
+				if t.Level > 0 && !t.IsBig() && !growing(tx, ty) {
 					draw(at.Bldg[z][t.Level-1][t.Variant%4], tx, ty)
 				}
 			case nearTrees(c, tx, ty):
@@ -285,8 +298,11 @@ func drawStatic(draw func(*ebiten.Image, int, int), at *Atlas, c *sim.City, x0, 
 	for ty := max(0, y0-2); ty <= y1; ty++ {
 		for tx := max(0, x0-2); tx <= x1; tx++ {
 			t := c.At(tx, ty)
-			if t.IsBuilding() && int(t.Anchor) == ty*c.W+tx {
+			switch {
+			case t.IsBuilding() && int(t.Anchor) == ty*c.W+tx:
 				draw(at.Civic[t.Kind], tx, ty)
+			case t.IsBig() && int(t.Anchor) == ty*c.W+tx:
+				draw(at.Big[t.Kind-sim.ZoneR][t.Variant%2], tx, ty)
 			}
 		}
 	}

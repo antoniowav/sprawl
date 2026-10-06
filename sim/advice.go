@@ -24,9 +24,12 @@ func (c *City) Inspect(x, y int) Inspection {
 		names := [3]string{"residential", "commercial", "industrial"}
 		levels := [4]string{"empty lot", "low density", "medium density", "high density"}
 		in.Title = fmt.Sprintf("%s · %s", names[z], levels[t.Level])
+		if t.IsBig() {
+			in.Title = [3]string{"residential tower", "big commercial", "industrial complex"}[z] + " (2×2)"
+		}
 		switch t.Kind {
 		case ZoneR:
-			in.Facts = append(in.Facts, fmt.Sprintf("%d residents", resCap[t.Level]))
+			in.Facts = append(in.Facts, fmt.Sprintf("%d residents", c.capacity(t)))
 			if t.Level > 0 {
 				switch {
 				case t.Commute < 0:
@@ -36,9 +39,9 @@ func (c *City) Inspect(x, y int) Inspection {
 				}
 			}
 		case ZoneC:
-			in.Facts = append(in.Facts, fmt.Sprintf("%d jobs", comCap[t.Level]))
+			in.Facts = append(in.Facts, fmt.Sprintf("%d jobs", c.capacity(t)))
 		case ZoneI:
-			in.Facts = append(in.Facts, fmt.Sprintf("%d jobs", indCap[t.Level]))
+			in.Facts = append(in.Facts, fmt.Sprintf("%d jobs", c.capacity(t)))
 		}
 		in.Facts = append(in.Facts, fmt.Sprintf("land value %.2f  smog %.0f%%", t.LandValue, 100*t.Pollution))
 		cover()
@@ -159,4 +162,15 @@ func (c *City) Advice() []Tip {
 		tips = append(tips, Tip{"demandC", "Residents want shops: zone commercial land."})
 	}
 	return tips
+}
+
+// capacity is what one zone tile holds (people or jobs), big-building bonus
+// included; a big building's tiles are summed.
+func (c *City) capacity(t *Tile) int {
+	caps := map[Kind][4]int{ZoneR: resCap, ZoneC: comCap, ZoneI: indCap}[t.Kind]
+	n := caps[t.Level]
+	if t.IsBig() {
+		return 4 * int(float64(n)*bigBonus)
+	}
+	return n
 }

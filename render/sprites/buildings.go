@@ -14,6 +14,12 @@ type Buildings struct {
 	Lights [3][3][4]*image.RGBA
 	// Chimney tops of high-density industry, per variant, for smoke.
 	Chimneys [4][]image.Point
+
+	// 2×2 buildings (32×32), [zone][variant], with night lights and the
+	// chimney tops of the industrial ones.
+	Big         [3][2]*image.RGBA
+	BigLights   [3][2]*image.RGBA
+	BigChimneys [2][]image.Point
 }
 
 // BuildBuildings renders every zone building.
@@ -38,7 +44,113 @@ func BuildBuildings(r theme.Roles) Buildings {
 			}
 		}
 	}
+	for v := 0; v < 2; v++ {
+		b.Big[0][v] = p.bigTower(v)
+		b.Big[1][v] = p.bigCommercial(v)
+		b.Big[2][v], b.BigChimneys[v] = p.bigIndustry(v)
+		for z := 0; z < 3; z++ {
+			b.BigLights[z][v] = p.lights(b.Big[z][v], uint64(500+z*10+v))
+		}
+	}
 	return b
+}
+
+// --- 2×2 buildings ---
+
+func (p *painter) bigTower(v int) *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, 2*T, 2*T))
+	fill(img, p.r.Grass)
+	rectB(img, 0, 26, 32, 32, p.pave)
+	wall := p.r.Walls[v%3]
+	roof := theme.Mix(p.flat, p.r.Roofs[v*2], 0.25)
+	p.blockB(img, 4, 1, 24, 7, 21, roof, wall)
+	rectB(img, 6, 2, 26, 6, theme.Mix(roof, p.flatD, 0.3))
+	rectB(img, 8+v*8, 2, 12+v*8, 5, p.flatD) // rooftop plant room
+	for r := 0; r < 9; r++ {
+		y := 10 + r*2
+		for x := 5; x < 27; x += 2 {
+			img.SetRGBA(x, y, p.glass)
+		}
+		img.SetRGBA(9+v*6, y, p.r.Roofs[v*2]) // balconies
+		img.SetRGBA(20-v*4, y, p.r.Roofs[v*2])
+	}
+	rectB(img, 14, 26, 18, 29, p.door)
+	p.bush(img, 1, 28)
+	p.bush(img, 29, 28)
+	return img
+}
+
+func (p *painter) bigCommercial(v int) *image.RGBA {
+	img := image.NewRGBA(image.Rect(0, 0, 2*T, 2*T))
+	fill(img, p.pave)
+	if v == 0 { // glass office tower
+		glass := theme.Mix(p.glass, p.r.ZoneC, 0.2)
+		p.blockB(img, 7, 2, 18, 5, 24, theme.Mix(p.flat, p.r.ZoneC, 0.3), glass)
+		for r := 0; r < 11; r++ {
+			rectB(img, 7, 8+r*2, 25, 9+r*2, dark(glass))
+		}
+		rectB(img, 9, 8, 10, 31, light(glass))
+		rectB(img, 15, 0, 16, 3, p.flatD) // antenna
+		img.SetRGBA(15, 0, p.r.UIErr)
+		rectB(img, 10, 3, 22, 6, p.r.ZoneC)
+		return img
+	}
+	// Shopping mall: a wide low hall, glass entrance, parking.
+	p.blockB(img, 2, 3, 28, 12, 6, p.flat, p.r.Walls[0])
+	rectB(img, 3, 4, 29, 6, light(p.flat))
+	rectB(img, 12, 15, 20, 21, p.glass)
+	rectB(img, 6, 16, 26, 17, p.r.ZoneC) // sign band
+	for x := 3; x < 30; x += 4 {
+		rectB(img, x, 25, x+1, 31, p.r.Sidewalk)
+	}
+	for i, x := range []int{5, 13, 21} {
+		rectB(img, x, 27, x+3, 29, [...]color.RGBA{p.r.Roofs[0], p.r.ZoneC, p.r.Walls[1]}[i])
+	}
+	return img
+}
+
+func (p *painter) bigIndustry(v int) (*image.RGBA, []image.Point) {
+	img := image.NewRGBA(image.Rect(0, 0, 2*T, 2*T))
+	fill(img, p.dirt)
+	roof := theme.Mix(p.flat, p.r.ZoneI, 0.25)
+	var tops []image.Point
+	stack := func(cx, top int) {
+		rectB(img, cx+1, top+1, cx+4, 22, p.shadow)
+		rectB(img, cx, top, cx+3, 21, p.flatD)
+		rectB(img, cx, top+3, cx+3, top+4, p.r.UIErr)
+		rectB(img, cx, top, cx+3, top+1, theme.Mix(p.flatD, p.r.Void, 0.5))
+		tops = append(tops, image.Point{cx + 1, top})
+	}
+	if v == 0 { // factory hall with sawtooth roof and three stacks
+		p.blockB(img, 1, 12, 26, 12, 6, roof, p.r.Walls[1])
+		for x := 1; x < 27; x += 3 {
+			rectB(img, x, 12, x+1, 24, light(roof))
+			rectB(img, x+2, 12, x+3, 24, dark(roof))
+		}
+		for i := 0; i < 3; i++ {
+			rectB(img, 4+i*8, 25, 9+i*8, 30, p.door)
+		}
+		stack(4, 1)
+		stack(12, 3)
+		stack(20, 0)
+		return img, tops
+	}
+	// Tank farm with pipework.
+	for _, c := range [][2]float64{{8, 9}, {22, 9}, {8, 23}} {
+		discB(img, c[0]+1.5, c[1]+1.5, 6, func(dx, dy float64) color.RGBA { return p.shadow })
+		discB(img, c[0], c[1], 6, func(dx, dy float64) color.RGBA {
+			if dx+dy < -3 {
+				return light(p.flat)
+			}
+			return p.flat
+		})
+		discB(img, c[0], c[1], 2, func(dx, dy float64) color.RGBA { return p.flatD })
+	}
+	rectB(img, 8, 15, 23, 17, p.r.PipeDark)
+	rectB(img, 14, 9, 16, 24, p.r.PipeDark)
+	p.blockB(img, 17, 18, 12, 7, 5, roof, p.r.Walls[0])
+	stack(26, 4)
+	return img, tops
 }
 
 // lights builds a night mask: about 70% of window pixels lit, picked by a

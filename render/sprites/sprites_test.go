@@ -92,3 +92,17 @@ func TestCivicSizes(t *testing.T) {
 		t.Error("icon size")
 	}
 }
+
+func TestBigBuildings(t *testing.T) {
+	b := BuildBuildings(theme.Derive(theme.Builtin()))
+	for z := range b.Big {
+		for v, img := range b.Big[z] {
+			if img.Bounds().Dx() != 2*T {
+				t.Errorf("big %d/%d size %v", z, v, img.Bounds())
+			}
+		}
+	}
+	if len(b.BigChimneys[0]) != 3 || len(b.BigChimneys[1]) != 1 {
+		t.Error("big industry chimneys")
+	}
+}
