@@ -67,3 +67,40 @@ func TestLogRing(t *testing.T) {
 		t.Fatalf("ring wrong: len %d first %q", len(c.Log), c.Log[0].Msg)
 	}
 }
+
+func TestMapTypes(t *testing.T) {
+	for _, m := range MapTypes {
+		for seed := int64(1); seed <= 5; seed++ {
+			c := NewMap(128, 128, seed, m)
+			var water, rock int
+			for _, tl := range c.Tiles {
+				switch tl.Terrain {
+				case Water:
+					water++
+				case Rock:
+					rock++
+				}
+			}
+			n := float64(len(c.Tiles))
+			lo, hi := 0.04, 0.3
+			if m == MapIslands {
+				lo, hi = 0.5, 0.7
+			}
+			if w := float64(water) / n; w < lo || w > hi {
+				t.Errorf("%s seed %d: water %.2f", m, seed, w)
+			}
+			if (m == MapHighlands) != (rock > 0) {
+				t.Errorf("%s seed %d: rock %d", m, seed, rock)
+			}
+			if c.At(c.Start.X, c.Start.Y).Terrain != Land {
+				t.Errorf("%s seed %d: start %v not on land", m, seed, c.Start)
+			}
+		}
+	}
+	a, b := NewMap(64, 64, 3, MapIslands), NewMap(64, 64, 3, MapIslands)
+	for i := range a.Tiles {
+		if a.Tiles[i] != b.Tiles[i] {
+			t.Fatal("islands not deterministic")
+		}
+	}
+}

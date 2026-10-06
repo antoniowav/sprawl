@@ -108,6 +108,11 @@ func (a *App) do(p input.Press) {
 		a.mode = modeBudget
 	case input.Stats:
 		a.mode = modeStats
+	case input.TimeOfDay:
+		a.cycleTimeOfDay(1)
+		a.flash(sim.Info, "day and night: %s", timeLabel(a.cfg.TimeOfDay))
+	case input.Minimap:
+		a.showMinimap = !a.showMinimap
 	case input.Guide:
 		a.showGuide = !a.showGuide
 	case input.ToggleLog:
@@ -213,6 +218,7 @@ func (a *App) isBuilding() bool {
 const maxUndo = 100
 
 func (a *App) touchEdit(e *sim.Edit) {
+	a.miniDirty = true
 	for _, ch := range e.Changes {
 		a.chunks.Touch(ch.I%a.city.W, ch.I/a.city.W)
 	}

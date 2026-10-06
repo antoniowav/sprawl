@@ -58,8 +58,8 @@ var settings = []setting{
 	}},
 	{"Animations", func(c *config.Config) string { return onOff(c.Animations) },
 		func(a *App, d int) { a.cfg.Animations = !a.cfg.Animations }},
-	{"Day and night", func(c *config.Config) string { return onOff(c.DayNight) },
-		func(a *App, d int) { a.cfg.DayNight = !a.cfg.DayNight }},
+	{"Day and night", func(c *config.Config) string { return timeLabel(c.TimeOfDay) },
+		func(a *App, d int) { a.cycleTimeOfDay(d) }},
 	{"Autosave", func(c *config.Config) string {
 		if c.AutosaveMonths == 0 {
 			return "off"
@@ -154,4 +154,21 @@ func tildePath(p string) string {
 		}
 	}
 	return p
+}
+
+func timeLabel(m string) string {
+	return map[string]string{"cycle": "cycle", "day": "always day", "night": "always night", "frozen": "paused"}[m]
+}
+
+// cycleTimeOfDay steps through cycle, day, night and frozen.
+func (a *App) cycleTimeOfDay(d int) {
+	ms := config.TimesOfDay
+	i := 0
+	for j, m := range ms {
+		if m == a.cfg.TimeOfDay {
+			i = j
+		}
+	}
+	a.cfg.TimeOfDay = ms[(i+d+len(ms))%len(ms)]
+	a.dirty = true
 }

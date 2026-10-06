@@ -65,3 +65,12 @@ func TestSaveRoundTrip(t *testing.T) {
 		t.Errorf("round trip: %+v", got)
 	}
 }
+
+func TestOldDayNightSetting(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	os.WriteFile(path, []byte("day_night = false\n"), 0o644)
+	c, _ := Load(path)
+	if c.TimeOfDay != "day" {
+		t.Errorf("day_night=false should mean always day, got %q", c.TimeOfDay)
+	}
+}

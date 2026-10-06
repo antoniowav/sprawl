@@ -11,6 +11,7 @@ const (
 	Land Terrain = iota
 	Water
 	Trees
+	Rock // highlands: nothing can be built on it
 )
 
 // Kind is what has been built on a tile.
@@ -69,8 +70,11 @@ type City struct {
 	Water  Utility
 	Log    []Event
 
-	PeakPop int // highest population reached; drives unlocks and milestones
-	History []Sample
+	Map        MapType
+	ScenarioID string
+	Start      Pt  // where the camera opens on a new map
+	PeakPop    int // highest population reached; drives unlocks and milestones
+	History    []Sample
 
 	Loan       *Loan
 	DebtMonths int
@@ -90,8 +94,11 @@ type City struct {
 // StartingFunds is the money a new city begins with.
 const StartingFunds = 20000
 
-// New generates a w×h city from seed.
-func New(w, h int, seed int64) *City {
+// New generates a w×h river-valley city from seed.
+func New(w, h int, seed int64) *City { return NewMap(w, h, seed, MapRiver) }
+
+// NewMap generates a w×h city of the given map type from seed.
+func NewMap(w, h int, seed int64, m MapType) *City {
 	c := &City{
 		W:     w,
 		H:     h,
@@ -105,7 +112,8 @@ func New(w, h int, seed int64) *City {
 	for i := range c.Tiles {
 		c.Tiles[i].Anchor = -1
 	}
-	generateTerrain(c)
+	c.Map = m
+	generateTerrain(c, m)
 	c.Name = cityName(c.rng)
 	return c
 }

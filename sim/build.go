@@ -116,6 +116,7 @@ const (
 	CostZone          = 5
 	CostBulldoze      = 1
 	CostBulldozeBuilt = 20 // extra for a developed tile or a building
+	CostBridge        = 60 // road tile over water
 )
 
 // Pt is a tile coordinate.
@@ -206,15 +207,18 @@ func zoneKind(t Tool) Kind { return ZoneR + Kind(t-ToolZoneR) }
 
 // tileCost says whether t changes this tile and what it costs.
 func (c *City) tileCost(t Tool, tl *Tile, pipesOnly bool) (float64, bool) {
-	buildable := tl.Terrain != Water
+	buildable := tl.Terrain != Water && tl.Terrain != Rock
 	switch t {
 	case ToolRoad:
+		if tl.Terrain == Water && tl.Kind == Empty {
+			return CostBridge, true // bridge
+		}
 		if !buildable || tl.Kind == Road || (tl.Kind != Empty && !isEmptyLot(tl)) {
 			return 0, false
 		}
 		return CostRoad, true
 	case ToolLine:
-		if !buildable || tl.Line || (tl.Kind != Empty && tl.Kind != Road) {
+		if tl.Line || (tl.Kind != Road && (!buildable || tl.Kind != Empty)) {
 			return 0, false
 		}
 		return CostLine, true
@@ -311,7 +315,7 @@ func (c *City) planBuilding(spec BuildingSpec, pts []Pt) Plan {
 			}
 			t := c.At(x, y)
 			p.Tiles = append(p.Tiles, Pt{x, y}) // kept on error, for the preview
-			if t.Terrain == Water || (t.Kind != Empty && !isEmptyLot(t)) {
+			if t.Terrain == Water || t.Terrain == Rock || (t.Kind != Empty && !isEmptyLot(t)) {
 				p.Err = fmt.Sprintf("%s needs %d×%d clear land", spec.Tool, spec.Size, spec.Size)
 			}
 			for _, d := range [4][2]int{{0, -1}, {1, 0}, {0, 1}, {-1, 0}} {

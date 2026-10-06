@@ -29,6 +29,7 @@ type Terrain struct {
 	Trees   [3]*image.RGBA
 	Water   [16]*image.RGBA // indexed by land-side mask
 	Shimmer [4]*image.RGBA  // transparent overlays, one per animation frame
+	Rock    [3]*image.RGBA
 }
 
 // BuildTerrain renders all terrain sprites for the given roles.
@@ -48,6 +49,9 @@ func BuildTerrain(r theme.Roles) Terrain {
 	}
 	for f := range t.Shimmer {
 		t.Shimmer[f] = shimmer(r, f)
+	}
+	for v := range t.Rock {
+		t.Rock[v] = rock(r, v)
 	}
 	return t
 }
@@ -183,6 +187,29 @@ func shimmer(r theme.Roles, f int) *image.RGBA {
 		for i := 0; i < d[2]; i++ {
 			img.SetRGBA((d[0]+i+f)%T, d[1], c)
 		}
+	}
+	return img
+}
+
+// rock: grass with grey boulders lit from the top-left.
+func rock(r theme.Roles, v int) *image.RGBA {
+	img := grass(r, v)
+	g := rng(7, v)
+	n := 2 + v
+	for i := 0; i < n; i++ {
+		cx, cy := 3+g.Float64()*10, 3+g.Float64()*10
+		rad := 2.2 + g.Float64()*2.3
+		disc(img, cx+1, cy+1.5, rad, func(dx, dy float64) color.RGBA { return r.Shadow })
+		disc(img, cx, cy, rad, func(dx, dy float64) color.RGBA {
+			lit := (dx + dy) / rad
+			switch {
+			case lit < -0.6:
+				return r.RockLight
+			case lit > 0.5:
+				return r.RockDark
+			}
+			return r.Rock
+		})
 	}
 	return img
 }

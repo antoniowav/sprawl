@@ -81,12 +81,18 @@ func (h *HUD) list(dst *ebiten.Image, w, y, cols int, title string, entries []Me
 	}
 }
 
-// NewCityForm is the state of the new-city screen.
+// FormField is one row of the new-city form.
+type FormField struct {
+	Label, Value string
+	Text         bool // typed text (shows a caret); otherwise ←→ choices
+	Disabled     bool
+}
+
+// NewCityForm is the new-city screen: fields, then Start and Back.
 type NewCityForm struct {
-	Name    string
-	Size    int
-	Seed    string
-	Field   int // 0 name, 1 size, 2 seed, 3 start, 4 back
+	Fields  []FormField
+	Focus   int // field index, then len(Fields) = Start, +1 = Back
+	Note    []string
 	Preview *ebiten.Image
 }
 
@@ -101,33 +107,37 @@ func (h *HUD) NewCity(dst *ebiten.Image, f *NewCityForm) {
 	if f.Preview != nil {
 		pv = f.Preview.Bounds().Dx()
 	}
-	scale := max(1, (128*s)/max(1, pv))
-	pvs := pv * scale
-	bw := 30*cw + pvs + 4*cw
-	bh := max(pvs+10*s, 8*lh)
+	pvs := 128 * s
+	scale := float64(pvs) / float64(max(1, pv))
+	leftW := 34 * cw
+	bw := leftW + pvs + 4*cw
+	rows := len(f.Fields)*3/2 + 3 + len(f.Note)
+	bh := max(pvs+10*s, rows*lh+10*s)
 	x0, y0 := (w-bw)/2, (ht-bh)/2
 	h.box(dst, x0, y0, bw, bh, "new city · ↑↓ field · ←→ change · Enter")
 
 	x, y := x0+2*cw, y0+8*s
-	field := func(i int, label, value, hint string) {
-		r := image.Rect(x0+s, y-2*s, x0+30*cw, y-2*s+lh)
+	for i, fd := range f.Fields {
+		r := image.Rect(x0+s, y-2*s, x0+leftW, y-2*s+lh)
 		h.Hits = append(h.Hits, r)
-		if f.Field == i {
+		if f.Focus == i && !fd.Disabled {
 			Rect(dst, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), h.R.UISel)
 		}
-		h.text(dst, label, x, y, h.R.UIDim)
-		end := h.text(dst, value, x+7*cw, y, h.R.UIText)
-		if f.Field == i && hint == "" {
-			h.text(dst, "█", end, y, h.R.UIAccent)
+		vc := h.R.UIText
+		if fd.Disabled {
+			vc = h.R.UIDim
 		}
-		if hint != "" && f.Field == i {
-			h.text(dst, hint, end+cw, y, h.R.UIDim)
+		h.text(dst, fd.Label, x, y, h.R.UIDim)
+		val := fd.Value
+		if !fd.Text && !fd.Disabled {
+			val = "< " + val + " >"
+		}
+		end := h.text(dst, val, x+7*cw, y, vc)
+		if f.Focus == i && fd.Text {
+			h.text(dst, "█", end, y, h.R.UIAccent)
 		}
 		y += lh + lh/2
 	}
-	field(0, "name", f.Name, "")
-	field(1, "size", sizeLabel(f.Size), "←→")
-	field(2, "seed", f.Seed, "")
 	y += lh / 2
 	for i, label := range []string{" Start ", " Back "} {
 		bwid := font.Width(label, s) + 2*s
@@ -135,17 +145,21 @@ func (h *HUD) NewCity(dst *ebiten.Image, f *NewCityForm) {
 		r := image.Rect(bx, y-2*s, bx+bwid, y-2*s+lh)
 		h.Hits = append(h.Hits, r)
 		bg, fg := h.R.UITrack, h.R.UIText
-		if f.Field == 3+i {
+		if f.Focus == len(f.Fields)+i {
 			bg, fg = h.R.UIAccent, h.R.UIAccentText
 		}
 		Rect(dst, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), bg)
 		h.text(dst, label, bx+s, y, fg)
 	}
-	h.text(dst, "←→ on seed rolls a new map", x, y+2*lh, h.R.UIDim)
+	y += 2 * lh
+	for _, n := range f.Note {
+		h.text(dst, n, x, y, h.R.UIDim)
+		y += lh
+	}
 
 	if f.Preview != nil {
 		var op ebiten.DrawImageOptions
-		op.GeoM.Scale(float64(scale), float64(scale))
+		op.GeoM.Scale(scale, scale)
 		px, py := x0+bw-pvs-2*cw, y0+(bh-pvs)/2
 		Frame(dst, px-s, py-s, pvs+2*s, pvs+2*s, s, h.R.UIBorder)
 		op.GeoM.Translate(float64(px), float64(py))
@@ -153,14 +167,17 @@ func (h *HUD) NewCity(dst *ebiten.Image, f *NewCityForm) {
 	}
 }
 
-func sizeLabel(n int) string {
+// SizeLabel names a map size.
+func SizeLabel(n int) string {
 	switch {
 	case n <= 96:
 		return "small 96×96"
 	case n <= 128:
 		return "medium 128×128"
+	case n <= 192:
+		return "large 192×192"
 	}
-	return "large 192×192"
+	return "huge 256×256"
 }
 
 // Settings draws the settings list.

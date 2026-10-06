@@ -16,17 +16,24 @@ func TestRoadRules(t *testing.T) {
 	c.At(1, 0).Terrain = Water
 	c.At(2, 0).Terrain = Trees
 	p := c.Apply(ToolRoad, LPath(Pt{0, 0}, Pt{3, 0}, false), false)
-	if p.Err != "" || len(p.Tiles) != 3 || p.Skipped != 1 {
+	if p.Err != "" || len(p.Tiles) != 4 || p.Cost != 3*CostRoad+CostBridge {
 		t.Fatalf("plan %+v", p)
 	}
-	if c.Funds != StartingFunds-3*CostRoad {
+	if c.Funds != StartingFunds-3*CostRoad-CostBridge {
 		t.Errorf("funds %v", c.Funds)
 	}
 	if c.At(2, 0).Terrain != Land || c.At(2, 0).Kind != Road {
 		t.Error("trees not cleared under road")
 	}
-	if c.At(1, 0).Kind != Empty {
-		t.Error("road on water")
+	if tl := c.At(1, 0); tl.Kind != Road || tl.Terrain != Water {
+		t.Error("road over water should be a bridge")
+	}
+	c.At(5, 5).Terrain = Rock
+	if p := c.Apply(ToolRoad, []Pt{{5, 5}}, false); p.Err == "" {
+		t.Error("road on rock")
+	}
+	if p := c.Apply(ToolZoneR, []Pt{{1, 0}}, false); p.Err == "" {
+		t.Error("zone on a bridge")
 	}
 	// Building again over the same road costs nothing and is refused.
 	if p := c.Apply(ToolRoad, []Pt{{0, 0}}, false); p.Err == "" {

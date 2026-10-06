@@ -10,10 +10,11 @@ import (
 // Network holds autotiled sprites (indexed by N/E/S/W neighbour mask) and
 // zone lots.
 type Network struct {
-	Road [16]*image.RGBA // opaque, grass underneath
-	Line [16]*image.RGBA // transparent overlay
-	Pipe [16]*image.RGBA // transparent overlay, underground view
-	Lot  [3]*image.RGBA  // empty R, C, I lots
+	Road   [16]*image.RGBA // opaque, grass underneath
+	Line   [16]*image.RGBA // transparent overlay
+	Pipe   [16]*image.RGBA // transparent overlay, underground view
+	Lot    [3]*image.RGBA  // empty R, C, I lots
+	Bridge [16]*image.RGBA // transparent overlay on water
 }
 
 // BuildNetwork renders roads, lines, pipes and lots.
@@ -23,6 +24,7 @@ func BuildNetwork(r theme.Roles) Network {
 		n.Road[m] = road(r, m)
 		n.Line[m] = powerLine(r, m)
 		n.Pipe[m] = pipe(r, m)
+		n.Bridge[m] = bridge(r, m)
 	}
 	for z, c := range []color.RGBA{r.ZoneR, r.ZoneC, r.ZoneI} {
 		n.Lot[z] = lot(r, c, z)
@@ -148,6 +150,35 @@ func lot(r theme.Roles, c color.RGBA, z int) *image.RGBA {
 		img.SetRGBA(i, T-2, dot)
 		img.SetRGBA(1, i, dot)
 		img.SetRGBA(T-2, i, dot)
+	}
+	return img
+}
+
+// bridge: a deck with railings and the shadow it casts on the water.
+func bridge(r theme.Roles, mask int) *image.RGBA {
+	img := newTile()
+	if mask == 0 {
+		mask = E | W
+	}
+	shadow := color.RGBA{0, 0, 0, 0x50}
+	for _, a := range arms(mask, 3, 13) {
+		rect(img, a[0]+1, a[1]+2, a[2]+1, a[3]+2, shadow)
+	}
+	for _, a := range arms(mask, 3, 13) {
+		rect(img, a[0], a[1], a[2], a[3], r.Sidewalk)
+	}
+	for _, a := range arms(mask, 4, 12) {
+		rect(img, a[0], a[1], a[2], a[3], r.Road)
+	}
+	vertical := mask&(N|S) != 0 && mask&(E|W) == 0
+	horizontal := mask&(E|W) != 0 && mask&(N|S) == 0
+	for i := 1; i < T; i += 5 {
+		if vertical {
+			rect(img, 7, i, 9, i+3, r.RoadMark)
+		}
+		if horizontal {
+			rect(img, i, 7, i+3, 9, r.RoadMark)
+		}
 	}
 	return img
 }

@@ -249,6 +249,11 @@ func drawStatic(draw func(*ebiten.Image, int, int), at *Atlas, c *sim.City, x0, 
 			switch {
 			case t.Terrain == sim.Water:
 				draw(at.Water[shoreMask(c, tx, ty)], tx, ty)
+				if t.Kind == sim.Road {
+					draw(at.Bridge[mask(c, tx, ty, func(t *sim.Tile) bool { return t.Kind == sim.Road })], tx, ty)
+				}
+			case t.Terrain == sim.Rock:
+				draw(at.Rock[hsh%3], tx, ty)
 			case t.Terrain == sim.Trees:
 				draw(at.Trees[hsh%3], tx, ty)
 			case t.Kind == sim.Road:

@@ -95,6 +95,7 @@ func (a *App) load(name string) {
 	a.city.Logf(sim.Info, "loaded %s", saveName(name)+saveExt)
 	a.grows = map[sim.Pt]time.Time{}
 	a.chunks.Reset()
+	a.miniDirty = true
 	a.undos, a.redos = nil, nil
 	a.clearTool()
 	a.cx, a.cy = c.W/2, c.H/2

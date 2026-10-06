@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -89,6 +90,12 @@ type App struct {
 	overlay         render.Overlay
 	menuSel         int
 	dlg             *dialog
+	showMinimap     bool
+	mini            *ebiten.Image
+	miniPix         []byte
+	miniDirty       bool
+	miniNext        time.Time
+	miniDrag        bool
 	chunks          *render.Chunks
 	settingSel      int
 	configPath      string
@@ -103,7 +110,7 @@ type App struct {
 	scene           scene
 	titleSel        int
 	pauseSel        int
-	form            *render.NewCityForm
+	nc              *newCityState
 	saveName        string // where Ctrl+S saves; empty until first save
 	unsaved         bool
 	history         []string
@@ -142,21 +149,22 @@ type App struct {
 // New builds the game state.
 func New(o Options) *App {
 	a := &App{
-		cfg:        o.Config,
-		city:       sim.New(o.Config.MapSize, o.Config.MapSize, o.Seed),
-		speed:      1,
-		showPanel:  true,
-		showLog:    true,
-		dirty:      true,
-		shotPath:   o.Screenshot,
-		grows:      map[sim.Pt]time.Time{},
-		seed:       o.Seed,
-		toolHover:  -1,
-		chunks:     render.NewChunks(),
-		configPath: o.ConfigPath,
-		showGuide:  guideFirstRun(),
-		dayClock:   dayLength * 0.3, // start in the morning
-		smokeRng:   rand.New(rand.NewPCG(1, 2)),
+		cfg:         o.Config,
+		city:        sim.New(o.Config.MapSize, o.Config.MapSize, o.Seed),
+		speed:       1,
+		showPanel:   true,
+		showLog:     true,
+		dirty:       true,
+		shotPath:    o.Screenshot,
+		grows:       map[sim.Pt]time.Time{},
+		seed:        o.Seed,
+		toolHover:   -1,
+		showMinimap: true,
+		chunks:      render.NewChunks(),
+		configPath:  o.ConfigPath,
+		showGuide:   guideFirstRun(),
+		dayClock:    dayLength * 0.3, // start in the morning
+		smokeRng:    rand.New(rand.NewPCG(1, 2)),
 	}
 	a.city.Logf(sim.Info, "%s founded · seed %d · %dx%d", a.city.Name, o.Seed, a.city.W, a.city.H)
 	if o.ConfigErr != nil {
@@ -201,6 +209,19 @@ func New(o Options) *App {
 		case "@settings":
 			a.openSettings()
 			continue
+		case "@start":
+			a.startCity()
+			continue
+		}
+		if v, ok := strings.CutPrefix(tok, "@map:"); ok && a.nc != nil {
+			a.nc.mapType, _ = strconv.Atoi(v)
+			a.refreshPreview()
+			continue
+		}
+		if v, ok := strings.CutPrefix(tok, "@mode:"); ok && a.nc != nil {
+			a.nc.mode, _ = strconv.Atoi(v)
+			a.refreshPreview()
+			continue
 		}
 		if cmd, ok := strings.CutPrefix(tok, ":"); ok && cmd != "" {
 			a.run(cmd)
@@ -239,6 +260,7 @@ func (a *App) loadTheme(reload bool) {
 	if a.chunks != nil {
 		a.chunks.Reset()
 	}
+	a.miniDirty = true
 	a.hud.R = a.roles
 	a.hud.Invalidate()
 	src := dir
@@ -303,6 +325,7 @@ func (a *App) Update() error {
 	}
 	a.updateMouse()
 
+	a.refreshMinimap(now)
 	simRate := 0.0
 	if a.scene == sceneGame {
 		simRate = a.stepSim(now)
@@ -333,17 +356,29 @@ func (a *App) Update() error {
 	return nil
 }
 
-// newCity replaces the city with a freshly generated one.
+// newCity replaces the city with a freshly generated river map.
 func (a *App) newCity(seed int64) {
+	c := sim.New(a.cfg.MapSize, a.cfg.MapSize, seed)
+	a.installCity(c, seed)
+	c.Logf(sim.Info, "%s founded · seed %d", c.Name, seed)
+}
+
+// installCity makes c the running city with a fresh view and history.
+func (a *App) installCity(c *sim.City, seed int64) {
 	a.seed = seed
-	a.city = sim.New(a.cfg.MapSize, a.cfg.MapSize, seed)
-	a.city.Logf(sim.Info, "%s founded · seed %d", a.city.Name, seed)
+	a.city = c
 	a.saveName, a.unsaved = "", false
 	a.showGuide, a.sawBudget = guideFirstRun(), false
+	a.undos, a.redos = nil, nil
 	a.grows = map[sim.Pt]time.Time{}
 	a.chunks.Reset()
+	a.miniDirty = true
+	a.lastPeak = 0
 	a.clearTool()
-	a.cx, a.cy = a.city.W/2, a.city.H/2
+	a.cx, a.cy = c.Start.X, c.Start.Y
+	if a.cx == 0 && a.cy == 0 {
+		a.cx, a.cy = c.W/2, c.H/2
+	}
 	a.cam.Jump(a.cursorWorld())
 	a.mode, a.dirty = modeNormal, true
 }
@@ -365,7 +400,9 @@ func (a *App) stepSim(now time.Time) float64 {
 	if a.paused {
 		return 0
 	}
-	a.dayClock += dt * speedMult[a.speed]
+	if a.cfg.TimeOfDay == "cycle" {
+		a.dayClock += dt * speedMult[a.speed]
+	}
 	a.stepSmoke(dt * speedMult[a.speed])
 	rate := float64(a.cfg.TicksPerSecond) * speedMult[a.speed]
 	a.simAcc += dt * rate
@@ -374,6 +411,9 @@ func (a *App) stepSim(now time.Time) float64 {
 		prevDay := a.city.Day
 		a.unsaved = true
 		changed := a.city.Tick()
+		if len(changed) > 0 {
+			a.miniDirty = true
+		}
 		for _, p := range changed {
 			a.chunks.Touch(p.X, p.Y)
 			if a.cfg.Animations {
@@ -405,8 +445,11 @@ const dayLength = 180.0
 
 // night is 0 by day and rises to 1 around midnight.
 func (a *App) night() float64 {
-	if !a.cfg.DayNight {
+	switch a.cfg.TimeOfDay {
+	case "day":
 		return 0
+	case "night":
+		return 0.85
 	}
 	phase := math.Mod(a.dayClock/dayLength, 1) // 0 midnight, 0.5 noon
 	sun := 0.5 - 0.5*math.Cos(2*math.Pi*phase)
@@ -522,19 +565,38 @@ func (a *App) zoom(d int) {
 	a.flash(sim.Info, "zoom %dx", z)
 }
 
+// zoomAt zooms keeping the world point under screen position (mx, my) in
+// place, so the wheel zooms toward the mouse.
+func (a *App) zoomAt(d, mx, my int) {
+	old := float64(a.cam.Zoom)
+	wx := a.cam.X + float64(mx-a.w/2)/old
+	wy := a.cam.Y + float64(my-a.h/2)/old
+	z := max(1, min(4, a.cam.Zoom+d))
+	if z == a.cam.Zoom {
+		return
+	}
+	a.cam.Zoom = z
+	a.cam.Jump(wx-float64(mx-a.w/2)/float64(z), wy-float64(my-a.h/2)/float64(z))
+	a.dirty = true
+	a.flash(sim.Info, "zoom %dx", z)
+}
+
 func (a *App) updateMouse() {
-	if _, dy := ebiten.Wheel(); dy != 0 {
+	mx, my := ebiten.CursorPosition()
+	if _, dy := ebiten.Wheel(); dy != 0 && a.scene == sceneGame {
 		a.wheel += dy
 		for a.wheel >= 1 {
 			a.wheel--
-			a.zoom(1)
+			a.zoomAt(1, mx, my)
 		}
 		for a.wheel <= -1 {
 			a.wheel++
-			a.zoom(-1)
+			a.zoomAt(-1, mx, my)
 		}
 	}
-	mx, my := ebiten.CursorPosition()
+	if a.updateMinimap(mx, my) {
+		return
+	}
 	a.updateLeftButton(mx, my)
 	pan := ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) || ebiten.IsMouseButtonPressed(ebiten.MouseButtonMiddle)
 	if pan && a.panning && (mx != a.panX || my != a.panY) {
@@ -579,7 +641,7 @@ func (a *App) Draw(screen *ebiten.Image) {
 			a.hud.Draw(screen, render.HUDState{City: a.city, Dialog: a.dlg.view(), Only: true})
 		}
 	case sceneNewCity:
-		a.hud.NewCity(screen, a.form)
+		a.hud.NewCity(screen, a.formView())
 	default:
 		st := a.hudState()
 		a.hud.DrawCached(screen, st, a.hudKey(st))
@@ -664,6 +726,9 @@ func (a *App) hudState() render.HUDState {
 		st.Dialog = a.dlg.view()
 	}
 	st.Toolbar, st.ToolHover = a.toolbarButtons(), a.toolHover
+	if a.showMinimap && a.mini != nil {
+		st.Minimap, st.MinimapView = a.mini, a.viewTiles()
+	}
 	st.Guide = a.guideView()
 	if plan, sel, ok := a.pending(); ok {
 		if plan.Err != "" {
@@ -687,6 +752,8 @@ func (a *App) tileInfo() string {
 	t := a.city.At(a.cx, a.cy)
 	var parts []string
 	switch {
+	case t.Kind == sim.Road && t.Terrain == sim.Water:
+		parts = append(parts, "bridge")
 	case t.Kind == sim.Road:
 		parts = append(parts, "road")
 	case t.IsZone():
@@ -708,6 +775,8 @@ func (a *App) tileInfo() string {
 		parts = append(parts, b.Tool.String())
 	case t.Terrain == sim.Water:
 		parts = append(parts, "water")
+	case t.Terrain == sim.Rock:
+		parts = append(parts, "rock")
 	case t.Terrain == sim.Trees:
 		parts = append(parts, "trees")
 	default:
@@ -760,6 +829,7 @@ func (a *App) hudKey(st render.HUDState) string {
 	if st.Prompt != nil {
 		b.WriteString(*st.Prompt)
 	}
+	fmt.Fprintf(&b, "|mm%v%v%v", st.Minimap != nil, st.MinimapView, a.miniNext)
 	if st.Guide != nil {
 		fmt.Fprintf(&b, "|g%d%v", st.Guide.Step, st.Guide.Done)
 	}

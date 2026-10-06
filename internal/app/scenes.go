@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"image"
 	"math/rand/v2"
 	"strconv"
@@ -47,6 +46,7 @@ func (a *App) showTitle() {
 	a.city = sim.New(a.cfg.MapSize, a.cfg.MapSize, time.Now().UnixNano()%1_000_000)
 	a.saveName, a.unsaved = "", false
 	a.chunks.Reset()
+	a.miniDirty = true
 	a.clearTool()
 	a.mode, a.dlg = modeNormal, nil
 	a.cam.Jump(float64(a.city.W*render.TileSize)/2, float64(a.city.H*render.TileSize)/2)
@@ -135,109 +135,171 @@ func nextEnabled(es []render.MenuEntry, i, d int) int {
 
 // --- new city form ---
 
-var mapSizes = []int{96, 128, 192}
+var mapSizes = []int{96, 128, 192, 256}
+
+// newCityState backs the new-city form.
+type newCityState struct {
+	mode    int // index into gameModes
+	name    string
+	mapType int // index into sim.MapTypes
+	size    int
+	seed    string
+	focus   int
+	preview *ebiten.Image
+}
+
+const (
+	fMode = iota
+	fName
+	fMap
+	fSize
+	fSeed
+	fieldCount
+	fStart = fieldCount
+	fBack  = fieldCount + 1
+)
 
 func (a *App) startNewCityForm() {
 	seed := rand.Int64N(1_000_000)
-	a.form = &render.NewCityForm{Size: a.cfg.MapSize, Seed: strconv.FormatInt(seed, 10)}
-	a.form.Name = sim.New(32, 32, seed).Name
+	a.nc = &newCityState{size: a.cfg.MapSize, seed: strconv.FormatInt(seed, 10), focus: fName}
+	a.nc.name = sim.New(32, 32, seed).Name
 	a.scene, a.mode, a.dlg = sceneNewCity, modeNormal, nil
 	a.refreshPreview()
 }
 
 func (a *App) formSeed() int64 {
-	n, err := strconv.ParseInt(a.form.Seed, 10, 64)
+	n, err := strconv.ParseInt(a.nc.seed, 10, 64)
 	if err != nil {
 		return 1
 	}
 	return n
 }
 
+// formCity generates the city the form describes (scenarios fix the map).
+func (a *App) formCity() *sim.City {
+	nc := a.nc
+	if sc := gameModes[nc.mode].scenario; sc != nil {
+		return sc.NewCity()
+	}
+	return sim.NewMap(nc.size, nc.size, a.formSeed(), sim.MapTypes[nc.mapType])
+}
+
 // refreshPreview regenerates the terrain thumbnail (one pixel per tile).
 func (a *App) refreshPreview() {
-	c := sim.New(a.form.Size, a.form.Size, a.formSeed())
+	c := a.formCity()
 	img := image.NewRGBA(image.Rect(0, 0, c.W, c.H))
-	for y := 0; y < c.H; y++ {
-		for x := 0; x < c.W; x++ {
-			col := a.roles.Grass
-			switch c.At(x, y).Terrain {
-			case sim.Water:
-				col = a.roles.Water
-			case sim.Trees:
-				col = a.roles.Tree
-			}
-			img.SetRGBA(x, y, col)
-		}
+	render.MinimapPixels(c, a.roles, img.Pix)
+	if a.nc.preview != nil {
+		a.nc.preview.Deallocate()
 	}
-	if a.form.Preview != nil {
-		a.form.Preview.Deallocate()
-	}
-	a.form.Preview = ebiten.NewImageFromImage(img)
+	a.nc.preview = ebiten.NewImageFromImage(img)
 	a.dirty = true
 }
 
+// formView builds what the HUD draws.
+func (a *App) formView() *render.NewCityForm {
+	nc := a.nc
+	gm := gameModes[nc.mode]
+	fixed := gm.scenario != nil
+	f := &render.NewCityForm{Focus: nc.focus, Preview: nc.preview}
+	f.Fields = []render.FormField{
+		{Label: "mode", Value: gm.name},
+		{Label: "name", Value: nc.name, Text: true},
+		{Label: "map", Value: sim.MapTypes[nc.mapType].String(), Disabled: fixed},
+		{Label: "size", Value: render.SizeLabel(nc.size), Disabled: fixed},
+		{Label: "seed", Value: nc.seed, Text: !fixed, Disabled: fixed},
+	}
+	if fixed {
+		f.Note = wrapText(gm.scenario.Brief, 32)
+	} else {
+		f.Note = []string{"←→ on seed rolls a new map"}
+	}
+	return f
+}
+
 func (a *App) updateNewCity() {
-	f := a.form
+	nc := a.nc
+	fixed := gameModes[nc.mode].scenario != nil
 	chars := a.poll.Chars()
 	if len(chars) > 0 {
 		a.dirty = true
 	}
-	switch f.Field {
-	case 0:
+	left, right := input.Repeated(ebiten.KeyArrowLeft), input.Repeated(ebiten.KeyArrowRight)
+	d := 0
+	if left {
+		d = -1
+	} else if right {
+		d = 1
+	}
+	switch nc.focus {
+	case fMode:
+		if d != 0 {
+			nc.mode = (nc.mode + d + len(gameModes)) % len(gameModes)
+			a.refreshPreview()
+		}
+	case fName:
 		for _, r := range chars {
-			if len(f.Name) < 24 && (r == ' ' || r == '-' || r == '\'' || ('a' <= r|32 && r|32 <= 'z') || ('0' <= r && r <= '9')) {
-				f.Name += string(r)
+			if len(nc.name) < 24 && (r == ' ' || r == '-' || r == '\'' || ('a' <= r|32 && r|32 <= 'z') || ('0' <= r && r <= '9')) {
+				nc.name += string(r)
 			}
 		}
-		if input.Repeated(ebiten.KeyBackspace) && f.Name != "" {
-			f.Name, a.dirty = f.Name[:len(f.Name)-1], true
+		if input.Repeated(ebiten.KeyBackspace) && nc.name != "" {
+			nc.name, a.dirty = nc.name[:len(nc.name)-1], true
 		}
-	case 2:
+	case fMap:
+		if d != 0 && !fixed {
+			nc.mapType = (nc.mapType + d + len(sim.MapTypes)) % len(sim.MapTypes)
+			a.refreshPreview()
+		}
+	case fSize:
+		if d != 0 && !fixed {
+			nc.size = cycle(nc.size, d, mapSizes)
+			a.refreshPreview()
+		}
+	case fSeed:
+		if fixed {
+			break
+		}
 		changed := false
 		for _, r := range chars {
-			if r >= '0' && r <= '9' && len(f.Seed) < 9 {
-				f.Seed += string(r)
+			if r >= '0' && r <= '9' && len(nc.seed) < 9 {
+				nc.seed += string(r)
 				changed = true
 			}
 		}
-		if input.Repeated(ebiten.KeyBackspace) && f.Seed != "" {
-			f.Seed, changed = f.Seed[:len(f.Seed)-1], true
+		if input.Repeated(ebiten.KeyBackspace) && nc.seed != "" {
+			nc.seed, changed = nc.seed[:len(nc.seed)-1], true
 		}
-		if input.Repeated(ebiten.KeyArrowLeft) || input.Repeated(ebiten.KeyArrowRight) {
-			f.Seed, changed = strconv.FormatInt(rand.Int64N(1_000_000), 10), true
+		if d != 0 {
+			nc.seed, changed = strconv.FormatInt(rand.Int64N(1_000_000), 10), true
 		}
-		if changed && f.Seed != "" {
+		if changed && nc.seed != "" {
 			a.refreshPreview()
 		}
-	case 1:
-		i := 0
-		for j, n := range mapSizes {
-			if n == f.Size {
-				i = j
+	case fStart, fBack:
+		if d != 0 {
+			nc.focus, a.dirty = fStart+fBack-nc.focus, true
+		}
+	}
+	n := fieldCount + 2
+	step := func(dir int) {
+		for {
+			nc.focus = (nc.focus + dir + n) % n
+			if !fixed || (nc.focus != fMap && nc.focus != fSize && nc.focus != fSeed) {
+				break
 			}
 		}
-		switch {
-		case input.Repeated(ebiten.KeyArrowLeft):
-			f.Size = mapSizes[(i+len(mapSizes)-1)%len(mapSizes)]
-			a.refreshPreview()
-		case input.Repeated(ebiten.KeyArrowRight):
-			f.Size = mapSizes[(i+1)%len(mapSizes)]
-			a.refreshPreview()
-		}
-	case 3, 4:
-		if input.Repeated(ebiten.KeyArrowLeft) || input.Repeated(ebiten.KeyArrowRight) {
-			f.Field, a.dirty = 7-f.Field, true
-		}
+		a.dirty = true
 	}
 	switch {
 	case input.Repeated(ebiten.KeyArrowDown) || input.Repeated(ebiten.KeyTab):
-		f.Field, a.dirty = (f.Field+1)%5, true
+		step(1)
 	case input.Repeated(ebiten.KeyArrowUp):
-		f.Field, a.dirty = (f.Field+4)%5, true
+		step(-1)
 	case inpututil.IsKeyJustPressed(ebiten.KeyEscape):
 		a.scene, a.dirty = sceneTitle, true
 	case inpututil.IsKeyJustPressed(ebiten.KeyEnter):
-		if f.Field == 4 {
+		if nc.focus == fBack {
 			a.scene, a.dirty = sceneTitle, true
 		} else {
 			a.startCity()
@@ -245,26 +307,47 @@ func (a *App) updateNewCity() {
 	}
 	if i, ok := a.menuMouse(); ok && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		switch i {
-		case 3:
+		case fStart:
 			a.startCity()
-		case 4:
+		case fBack:
 			a.scene, a.dirty = sceneTitle, true
 		default:
-			f.Field, a.dirty = i, true
+			nc.focus, a.dirty = i, true
 		}
 	}
 }
 
 func (a *App) startCity() {
-	f := a.form
-	a.cfg.MapSize = f.Size
-	a.newCity(a.formSeed())
-	if name := strings.TrimSpace(f.Name); name != "" {
-		a.city.Name = name
+	nc := a.nc
+	c := a.formCity()
+	a.installCity(c, a.formSeed())
+	if name := strings.TrimSpace(nc.name); name != "" {
+		c.Name = name
 	}
-	a.city.Log[len(a.city.Log)-1].Msg = fmt.Sprintf("%s founded · seed %d · %dx%d", a.city.Name, a.seed, f.Size, f.Size)
+	c.Log = nil
+	c.Logf(sim.Info, "%s founded · %s · %dx%d", c.Name, c.Map, c.W, c.H)
+	if sc := gameModes[nc.mode].scenario; sc != nil {
+		sc.Begin(c)
+	}
 	a.scene = sceneGame
 	a.paused = false
+}
+
+// wrapText breaks s into lines of at most n characters.
+func wrapText(s string, n int) []string {
+	var out []string
+	line := ""
+	for _, w := range strings.Fields(s) {
+		if line != "" && len(line)+1+len(w) > n {
+			out = append(out, line)
+			line = ""
+		}
+		if line != "" {
+			line += " "
+		}
+		line += w
+	}
+	return append(out, line)
 }
 
 // --- pause menu ---

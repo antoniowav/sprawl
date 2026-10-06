@@ -23,6 +23,8 @@ type Atlas struct {
 	Line    [16]*ebiten.Image
 	Pipe    [16]*ebiten.Image
 	Lot     [3]*ebiten.Image
+	Bridge  [16]*ebiten.Image
+	Rock    [3]*ebiten.Image
 	Bldg    [3][3][4]*ebiten.Image // [zone][level-1][variant]
 	Lights  [3][3][4]*ebiten.Image
 	CivicLt map[sim.Kind]*ebiten.Image
@@ -57,6 +59,8 @@ func NewAtlas(r theme.Roles) *Atlas {
 	a.up(a.Line[:], n.Line[:])
 	a.up(a.Pipe[:], n.Pipe[:])
 	a.up(a.Lot[:], n.Lot[:])
+	a.up(a.Bridge[:], n.Bridge[:])
+	a.up(a.Rock[:], t.Rock[:])
 	b := sprites.BuildBuildings(r)
 	for z := range b.Img {
 		for l := range b.Img[z] {

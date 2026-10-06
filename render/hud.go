@@ -40,6 +40,8 @@ type HUDState struct {
 	Menu             *Menu // build menu, when open
 	Dialog           *Dialog
 	Toolbar          []ToolButton
+	Minimap          *ebiten.Image
+	MinimapView      image.Rectangle // visible tiles
 	Guide            *Guide
 	ToolHover        int  // -1 when the mouse isn't over the toolbar
 	Only             bool // draw only the dialog (over the title screen)
@@ -78,6 +80,8 @@ type HUD struct {
 
 	layer   *ebiten.Image
 	lastKey string
+
+	MiniRect image.Rectangle // where the minimap was drawn
 }
 
 // DrawCached draws the HUD through an offscreen layer that is only redrawn
@@ -150,6 +154,10 @@ func (h *HUD) Draw(dst *ebiten.Image, st HUDState) {
 		h.panel(dst, w, h.barH(), bottom, st)
 	}
 	h.toolbar(dst, bottom, st)
+	h.MiniRect = image.Rectangle{}
+	if st.Minimap != nil {
+		h.MiniRect = h.Minimap(dst, st.Minimap, st.MinimapView, bottom)
+	}
 	if st.Guide != nil {
 		h.guide(dst, st.Guide)
 	}

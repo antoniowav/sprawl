@@ -55,6 +55,8 @@ const (
 	Budget        Action = "budget"
 	Guide         Action = "guide"
 	Stats         Action = "stats"
+	TimeOfDay     Action = "time_of_day"
+	Minimap       Action = "minimap"
 )
 
 // Def is a default binding with its help text.
@@ -84,6 +86,8 @@ var Defaults = []Def{
 	{Budget, []string{"Ctrl+b", "F3"}, "budget", "view"},
 	{Stats, []string{"Ctrl+g", "F4"}, "statistics", "view"},
 	{Guide, []string{"F1"}, "getting-started guide", "view"},
+	{TimeOfDay, []string{"n"}, "day / night / cycle", "view"},
+	{Minimap, []string{"m"}, "minimap", "view"},
 	{ToggleLog, []string{"e", "F2"}, "event log", "view"},
 	{Road, []string{"r"}, "road", "build"},
 	{PowerLine, []string{"p"}, "power line", "build"},

@@ -18,6 +18,7 @@ type Roles struct {
 	Shadow                       color.RGBA
 	Water, WaterDeep, WaterLight color.RGBA
 	Foam                         color.RGBA
+	Rock, RockDark, RockLight    color.RGBA
 
 	// Built things
 	Road, RoadEdge, RoadMark color.RGBA
@@ -68,6 +69,10 @@ func Derive(p Palette) Roles {
 	r.WaterDeep = Mix(p.Blue, deep, 0.6)
 	r.WaterLight = Mix(p.Blue, deep, 0.3)
 	r.Foam = Mix(p.BrightBlue, p.Foreground, 0.45)
+	stone := Mix(p.Muted, p.Brown, 0.25)
+	r.Rock = Mix(stone, base, 0.25)
+	r.RockDark = Mix(stone, deep, 0.45)
+	r.RockLight = Mix(stone, p.Foreground, 0.25)
 
 	r.Road = Mix(p.LighterBackground, p.Muted, 0.35)
 	r.RoadEdge = Mix(r.Road, deep, 0.35)
