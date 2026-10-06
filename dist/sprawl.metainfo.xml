@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.antoniowav.sprawl</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Sprawl</name>
+  <summary>A small, keyboard-first pixel-art city builder</summary>
+  <developer id="io.github.antoniowav">
+    <name>Antonio Piattelli</name>
+  </developer>
+  <description>
+    <p>
+      Lay roads, zone homes, shops and industry, and keep the power, water
+      and budget flowing while your settlement grows from a hamlet into a
+      metropolis. Sprawl is a compact city builder with crisp pixel art,
+      keyboard and mouse controls, and colours that follow your desktop
+      theme.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/antoniowav/sprawl</url>
+  <url type="bugtracker">https://github.com/antoniowav/sprawl/issues</url>
+  <launchable type="desktop-id">sprawl.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/antoniowav/sprawl/main/docs/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>Game</category>
+    <category>Simulation</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-06"/>
+  </releases>
+</component>

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Sprawl
+Comment=Keyboard-first pixel-art city builder
+Exec=sprawl
+Icon=sprawl
+Terminal=false
+Categories=Game;Simulation;
+StartupWMClass=sprawl

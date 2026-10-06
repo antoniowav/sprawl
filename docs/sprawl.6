@@ -1,0 +1,53 @@
+.TH SPRAWL 6 "October 2026" "Sprawl 0.1.0" "Games"
+.SH NAME
+sprawl \- a small, keyboard-first pixel-art city builder
+.SH SYNOPSIS
+.B sprawl
+[\fB\-seed\fR \fIN\fR] [\fB\-config\fR \fIpath\fR] [\fB\-version\fR]
+.SH DESCRIPTION
+Lay roads, zone residential, commercial and industrial land, connect power
+and water, add services and balance the budget while the city grows.
+Without options the game opens on its title screen.
+.SH OPTIONS
+.TP
+.BI \-seed " N"
+Seed for the first generated map.
+.TP
+.BI \-config " path"
+Configuration file (default \fI~/.config/sprawl/config.toml\fR).
+.TP
+.B \-version
+Print the version and exit.
+.TP
+.BI \-screenshot " file.png"
+Render one 1280x800 frame to a PNG and exit (with \fB\-actions\fR and
+\fB\-ticks\fR to script it).
+.SH KEYS
+Press \fB?\fR in the game for the full list. Highlights:
+.TP
+.B Ctrl+S, Ctrl+O, Ctrl+N, Ctrl+Q
+Save, open, new city, quit.
+.TP
+.B Ctrl+Z, Ctrl+Shift+Z
+Undo, redo.
+.TP
+.B r p w d, z r/c/i, b
+Road, power line, water pipe, bulldoze, zones, buildings.
+.TP
+.B h j k l / arrows, + -, Space, 1 2 3
+Move, zoom, pause, speed.
+.TP
+.B Esc
+Back out, or open the menu.
+.SH FILES
+.TP
+.I ~/.config/sprawl/config.toml
+Settings and key bindings.
+.TP
+.I ~/.local/share/sprawl/
+Saved cities (\fI*.city\fR) and the autosave.
+.SH ENVIRONMENT
+.TP
+.B SPRAWL_THEME_DIR
+Read the colour theme from this directory instead of the active Omarchy
+theme.
