@@ -1,16 +1,16 @@
 # Sprawl
 
 A small, keyboard-first, pixel-art city builder for Linux, made to feel at
-home on Omarchy (Arch + Hyprland). Roads, zones, power, water, services and
+home on an Arch + Hyprland desktop. Roads, zones, power, water, services and
 a budget — no traffic, disasters or individual citizens. It follows your
-Omarchy theme, live.
+desktop theme, live.
 
 ![screenshot](docs/screenshot.png)
 
 ## Install
 
-Needs Go 1.27+ and the usual X11/GL and ALSA libraries (present on any
-Omarchy desktop):
+Needs Go 1.27+ and the usual X11/GL and ALSA libraries (present on a
+typical Arch + Hyprland desktop):
 
 ```sh
 sudo pacman -S --needed go mesa libxrandr libxcursor libxinerama libxi
@@ -81,7 +81,7 @@ road that leads to a plant has power; use lines to reach the rest.
 | `:loan`, `:repay` | borrow $10,000 (repaid $450/month for 24 months), or pay off early |
 | `:w [name]`, `:e [name]` | save, load (`:e` alone lists saves) |
 | `:new [seed]`, `:name <city>` | new map, rename |
-| `:theme reload` | re-read the Omarchy theme |
+| `:theme reload` | re-read the desktop theme |
 | `:q`, `:wq` | quit, save and quit |
 
 Twelve months in debt and the city goes bankrupt.
@@ -126,10 +126,10 @@ bar, and achievements (F5) are kept across all your cities.
   run. Every key is rebindable under `[keys]`, e.g. `road = ["R"]`.
 - Saves: `~/.local/share/sprawl/*.city` (gzip'd JSON), autosave every 6
   game months.
-- Theme: read from Cuore (`~/.local/state/cuore/current/theme`) or Omarchy
-  (`~/.config/omarchy/current/theme`, `~/.local/state/omarchy/current/theme`):
-  `colors.toml`, falling back to `alacritty.toml`. `SPRAWL_THEME_DIR`
-  overrides. Without either it uses a built-in palette.
+- Theme: read from your desktop's current theme folder (`colors.toml`,
+  falling back to `alacritty.toml`) and followed live when you switch themes.
+  `SPRAWL_THEME_DIR=/path/to/theme` points it at another folder. Without a
+  theme it uses a built-in palette.
 
 ## Flags
 
