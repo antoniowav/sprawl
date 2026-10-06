@@ -5,7 +5,6 @@ import (
 	"math/rand/v2"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -43,13 +42,10 @@ func (a *App) titleEntries() []render.MenuEntry {
 // showTitle switches to the title screen with a fresh backdrop map.
 func (a *App) showTitle() {
 	a.scene = sceneTitle
-	a.city = sim.New(a.cfg.MapSize, a.cfg.MapSize, time.Now().UnixNano()%1_000_000)
 	a.saveName, a.unsaved = "", false
-	a.chunks.Reset()
-	a.miniDirty = true
 	a.clearTool()
 	a.mode, a.dlg = modeNormal, nil
-	a.cam.Jump(float64(a.city.W*render.TileSize)/2, float64(a.city.H*render.TileSize)/2)
+	a.newTimelapse()
 	a.titleSel = 0
 	if a.titleEntries()[0].Disabled {
 		a.titleSel = 1
@@ -58,15 +54,7 @@ func (a *App) showTitle() {
 }
 
 func (a *App) updateTitle(dt float64) {
-	// Slow drift over the backdrop map.
-	a.cam.X += dt * 6
-	a.cam.Y += dt * 2
-	maxX := float64(a.city.W * render.TileSize)
-	if a.cam.X > maxX*0.8 {
-		a.cam.X = maxX * 0.2
-	}
-	a.cam.TX, a.cam.TY = a.cam.X, a.cam.Y
-	a.dirty = true
+	a.updateTimelapse(dt)
 
 	entries := a.titleEntries()
 	pick := -1

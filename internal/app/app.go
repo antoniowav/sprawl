@@ -112,6 +112,7 @@ type App struct {
 	titleSel        int
 	pauseSel        int
 	nc              *newCityState
+	tl              *timelapse
 	saveName        string // where Ctrl+S saves; empty until first save
 	unsaved         bool
 	history         []string
@@ -214,6 +215,13 @@ func New(o Options) *App {
 			continue
 		case "@start":
 			a.startCity()
+			continue
+		}
+		if v, ok := strings.CutPrefix(tok, "@age:"); ok && a.scene == sceneTitle {
+			secs, _ := strconv.Atoi(v)
+			for i := 0; i < secs*10; i++ {
+				a.updateTimelapse(0.1)
+			}
 			continue
 		}
 		if v, ok := strings.CutPrefix(tok, "@tool:"); ok {
@@ -380,6 +388,8 @@ func (a *App) newCity(seed int64) {
 
 // installCity makes c the running city with a fresh view and history.
 func (a *App) installCity(c *sim.City, seed int64) {
+	a.tl = nil
+	a.cam.Zoom = a.cfg.Zoom
 	a.seed = seed
 	a.city = c
 	a.saveName, a.unsaved = "", false
