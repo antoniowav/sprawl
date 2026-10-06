@@ -27,6 +27,7 @@ func main() {
 		shot    = flag.String("screenshot", "", "save a PNG of the first frame to this path and exit")
 		actions = flag.String("actions", "", "comma-separated actions to run at startup (with -screenshot)")
 		ticks   = flag.Int("ticks", 0, "simulate this many ticks after -actions (with -screenshot)")
+		drive   = flag.Float64("drive", 0, "run this many seconds of car trips after -ticks (with -screenshot)")
 		iconOut = flag.String("write-icon", "", "write the 256×256 app icon PNG to this path and exit")
 		iconDir = flag.String("write-icons", "", "write icons at 32-512 px into this hicolor directory and exit")
 		version = flag.Bool("version", false, "print version and exit")
@@ -72,7 +73,7 @@ func main() {
 	ebiten.SetWindowClosingHandled(true) // ask before losing unsaved work
 	ebiten.SetRunnableOnUnfocused(!cfg.PauseUnfocused || *shot != "")
 
-	game := app.New(app.Options{Config: cfg, ConfigPath: *cfgPath, ConfigErr: cfgErr, Seed: *seed, Screenshot: *shot, Actions: splitList(*actions), Ticks: *ticks})
+	game := app.New(app.Options{Config: cfg, ConfigPath: *cfgPath, ConfigErr: cfgErr, Seed: *seed, Screenshot: *shot, Actions: splitList(*actions), Ticks: *ticks, Drive: *drive})
 	// WM_CLASS / app-id "sprawl", so Hyprland window rules can target it.
 	opts := &ebiten.RunGameOptions{X11ClassName: meta.ID(), X11InstanceName: meta.ID()}
 	if err := ebiten.RunGameWithOptions(game, opts); err != nil {

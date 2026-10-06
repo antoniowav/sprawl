@@ -102,6 +102,7 @@ type City struct {
 	brownout, waterShort bool
 	lvBonus              []float32 // scratch for updateLandValue
 	noise                []float32 // land-value loss from busy roads, set by updateTraffic
+	jobDist              []int32   // road distance to the nearest jobs, set by updateTraffic
 	yearNet              float64
 }
 

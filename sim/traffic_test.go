@@ -63,3 +63,17 @@ func TestBusesNeedADepot(t *testing.T) {
 		t.Errorf("buses didn't take commuters off the road: %d", got)
 	}
 }
+
+func TestTripRoute(t *testing.T) {
+	c := commuteTown(30)
+	c.updateTraffic()
+	r := c.TripRoute(1*c.W + 0)
+	if len(r) != 27 || r[0] != 2*c.W+0 || r[len(r)-1] != 2*c.W+26 {
+		t.Fatalf("route %d tiles, %v..%v", len(r), r[0], r[len(r)-1])
+	}
+	c.Apply(ToolBulldoze, []Pt{{12, 2}}, false)
+	c.updateTraffic()
+	if c.TripRoute(1*c.W+0) != nil {
+		t.Error("route through a missing road")
+	}
+}

@@ -178,6 +178,7 @@ func (a *App) updateTimelapse(dt float64) {
 	}
 	a.stepSmoke(dt)
 	a.carClock += dt
+	a.stepTrips(dt * timelapseDay)
 
 	// Orbit the town slowly.
 	tl.orbit += dt * 0.04

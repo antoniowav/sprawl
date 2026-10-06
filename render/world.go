@@ -33,6 +33,7 @@ type WorldView struct {
 	Blink     bool    // icon blink phase
 	Time      float64 // seconds of sim time, for moving cars
 	CarsOut   *bool   // set when cars are on screen
+	Cars      []Car
 	Night     float64 // 0 day .. 1 deep night
 	Particles []Particle
 
@@ -87,7 +88,7 @@ func DrawWorld(dst *ebiten.Image, v WorldView) (animated bool) {
 			}
 		}
 	}
-	if drawCars(dst, v, x0, y0, x1, y1, ox, oy) {
+	if drawCars(dst, v, ox, oy) {
 		animated = true
 		if v.CarsOut != nil {
 			*v.CarsOut = true

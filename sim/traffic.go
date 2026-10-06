@@ -60,6 +60,8 @@ func (c *City) updateTraffic() {
 		}
 	}
 
+	c.jobDist = dist
+
 	// Bus stops only run if a powered depot exists somewhere.
 	transit := make([]bool, n)
 	depot := false
@@ -171,4 +173,47 @@ func (c *City) commutePenalty(t *Tile) float64 {
 		return farCommutePenal
 	}
 	return 0
+}
+
+// TripRoute is the road path a commuter from home tile i drives to work:
+// road tile indexes from the road beside the home to the road beside the
+// nearest jobs. Nil if the home has no road route to any job.
+func (c *City) TripRoute(i int) []int {
+	if len(c.jobDist) != len(c.Tiles) {
+		c.updateTraffic()
+	}
+	dist := c.jobDist
+	x, y := i%c.W, i/c.W
+	start := -1
+	for _, d := range dirs4 {
+		nx, ny := x+d[0], y+d[1]
+		if !c.In(nx, ny) {
+			continue
+		}
+		j := ny*c.W + nx
+		if c.Tiles[j].Kind == Road && dist[j] >= 0 && (start < 0 || dist[j] < dist[start]) {
+			start = j
+		}
+	}
+	if start < 0 {
+		return nil
+	}
+	path := []int{start}
+	for cur := start; dist[cur] > 0; {
+		cx, cy := cur%c.W, cur/c.W
+		next := -1
+		for _, d := range dirs4 {
+			nx, ny := cx+d[0], cy+d[1]
+			if c.In(nx, ny) && dist[ny*c.W+nx] == dist[cur]-1 {
+				next = ny*c.W + nx
+				break
+			}
+		}
+		if next < 0 {
+			break
+		}
+		path = append(path, next)
+		cur = next
+	}
+	return path
 }

@@ -54,6 +54,7 @@ type Options struct {
 	Screenshot string   // write a PNG after the first frames and quit
 	Actions    []string // actions to run at startup (for scripted screenshots)
 	Ticks      int      // sim ticks to run after the actions (for screenshots)
+	Drive      float64  // seconds of car trips to run after the ticks
 	SkipTitle  bool
 }
 
@@ -138,7 +139,8 @@ type App struct {
 	simAcc      float64
 	lastUpdate  time.Time
 	dayClock    float64 // seconds into the day/night cycle (sim time)
-	carClock    float64 // seconds of running sim time, for cars
+	carClock    float64 // seconds of running sim time
+	trips       *traffic
 	carsVisible bool
 	particles   []render.Particle
 	emitters    []image.Point
@@ -283,6 +285,9 @@ func New(o Options) *App {
 		a.city.Tick()
 	}
 	a.dayClock += float64(o.Ticks) / float64(o.Config.TicksPerSecond)
+	for i := 0; i < int(o.Drive*10); i++ {
+		a.stepTrips(0.1)
+	}
 	a.msg = ""
 	return a
 }
@@ -465,6 +470,7 @@ func (a *App) stepSim(now time.Time) float64 {
 	}
 	a.stepSmoke(dt * speedMult[a.speed])
 	a.carClock += dt
+	a.stepTrips(dt * speedMult[a.speed])
 	rate := float64(a.cfg.TicksPerSecond) * speedMult[a.speed]
 	a.simAcc += dt * rate
 	for n := 0; a.simAcc >= 1 && n < 16; n++ {
@@ -692,7 +698,7 @@ func (a *App) Draw(screen *ebiten.Image) {
 		CursorX: cx, CursorY: cy, AnimFrame: a.animFrame, Animations: a.cfg.Animations,
 		Underground: a.underground, Grow: a.growProgress, Chunks: a.chunks, Growing: a.growingList(),
 		Overlay: a.overlay, Blink: !a.cfg.Animations || time.Now().UnixMilli()/500%2 == 0,
-		Night: a.night(), Particles: a.particles, Emitters: &a.emitters, Time: a.carClock, CarsOut: &a.carsVisible,
+		Night: a.night(), Particles: a.particles, Emitters: &a.emitters, Time: a.carClock, CarsOut: &a.carsVisible, Cars: a.tripView(),
 	}
 	if plan, sel, ok := a.pending(); ok {
 		view.Preview, view.PreviewBad = plan.Tiles, plan.Err != ""
