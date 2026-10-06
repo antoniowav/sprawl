@@ -46,6 +46,7 @@ func generateTerrain(c *City, m MapType) {
 		genLakes(c, lakeShare, true)
 	}
 	plantForest(c)
+	genHeights(c, m)
 	c.Start = findStart(c)
 }
 

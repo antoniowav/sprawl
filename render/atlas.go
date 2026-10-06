@@ -38,6 +38,8 @@ type Atlas struct {
 	NoWater *ebiten.Image
 	Hatch   *ebiten.Image
 	Tools   [sprites.IconCount]*ebiten.Image
+	Shade   [80]*ebiten.Image
+	Tint    [11]*ebiten.Image
 
 	all []*ebiten.Image
 }
@@ -93,6 +95,10 @@ func NewAtlas(r theme.Roles) *Atlas {
 	a.NoPower, a.NoWater, a.Hatch = icons[0], icons[1], icons[2]
 	ti := sprites.ToolIcons(r)
 	a.up(a.Tools[:], ti[:])
+	sh := sprites.BuildShades()
+	a.up(a.Shade[:], sh[:])
+	tn := sprites.BuildHeightTints()
+	a.up(a.Tint[:], tn[:])
 	return a
 }
 

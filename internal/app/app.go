@@ -83,6 +83,7 @@ type App struct {
 	tool            sim.Tool
 	hasTool         bool
 	zonePending     bool
+	terraPending    bool
 	visual          bool // keyboard visual selection
 	drag            bool // mouse drag selection
 	anchor          sim.Pt
@@ -793,6 +794,8 @@ func (a *App) hudState() render.HUDState {
 		modeName = "FILE"
 	case a.zonePending:
 		modeName = "ZONE r/c/i"
+	case a.terraPending:
+		modeName = "TERRAIN r/l/f"
 	case a.visual || a.drag:
 		modeName = "VISUAL"
 	case a.paint:

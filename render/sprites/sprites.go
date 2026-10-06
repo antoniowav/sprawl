@@ -213,3 +213,79 @@ func rock(r theme.Roles, v int) *image.RGBA {
 	}
 	return img
 }
+
+// Hill shading: an overlay per (light, edges). Light is -2..2 (facing away
+// from or toward the north-west sun); edge bits mark which neighbours are
+// lower (S, E: shadowed step below) or higher (N, W: lit lip above).
+const (
+	EdgeS = 1 << iota
+	EdgeE
+	EdgeN
+	EdgeW
+)
+
+// ShadeKey indexes the shade overlays.
+func ShadeKey(light, edges int) int { return (light+2)*16 + edges }
+
+// BuildShades renders the 5×16 hill-shade overlays.
+func BuildShades() [80]*image.RGBA {
+	var out [80]*image.RGBA
+	for light := -2; light <= 2; light++ {
+		for e := 0; e < 16; e++ {
+			img := newTile()
+			var base color.RGBA
+			switch {
+			case light > 0:
+				a := uint8(0x09 * light)
+				base = color.RGBA{a, a, a, a}
+			case light < 0:
+				base = color.RGBA{0, 0, 0, uint8(0x10 * -light)}
+			}
+			fill(img, base)
+			dark := color.RGBA{0, 0, 0, 0x50}
+			lip := color.RGBA{0x22, 0x22, 0x22, 0x22}
+			if e&EdgeN != 0 {
+				rect(img, 0, 0, T, 1, lip)
+			}
+			if e&EdgeW != 0 {
+				rect(img, 0, 0, 1, T, lip)
+			}
+			if e&EdgeS != 0 {
+				rect(img, 0, T-2, T, T, dark)
+			}
+			if e&EdgeE != 0 {
+				rect(img, T-1, 0, T, T, color.RGBA{0, 0, 0, 0x38})
+			}
+			out[ShadeKey(light, e)] = img
+		}
+	}
+	return out
+}
+
+// BuildHeightTints lightens ground a little per level, so plateaus read as
+// one surface and high ground stands out.
+func BuildHeightTints() [11]*image.RGBA {
+	var out [11]*image.RGBA
+	for h := range out {
+		img := newTile()
+		a := uint8(4 * h)
+		fill(img, color.RGBA{a, a, a, a})
+		out[h] = img
+	}
+	return out
+}
+
+// mountain is the terrain tool icon.
+func mountain(r theme.Roles) *image.RGBA {
+	return glyphIcon([]string{
+		"................",
+		"................",
+		".......#........",
+		"......###.......",
+		".....#####..#...",
+		"....#######.##..",
+		"...###########..",
+		"..#############.",
+		".###############",
+	}, r.UIText)
+}

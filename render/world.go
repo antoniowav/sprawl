@@ -283,13 +283,18 @@ func drawStatic(draw func(*ebiten.Image, int, int), at *Atlas, c *sim.City, x0, 
 			case t.IsZone():
 				z := t.Kind - sim.ZoneR
 				draw(at.Lot[z], tx, ty)
+				shade(draw, at, c, tx, ty)
 				if t.Level > 0 && !t.IsBig() && !growing(tx, ty) {
 					draw(at.Bldg[z][t.Level-1][t.Variant%4], tx, ty)
 				}
+				continue
 			case nearTrees(c, tx, ty):
 				draw(at.Lush[hsh%2], tx, ty)
 			default:
 				draw(at.Grass[hsh%4], tx, ty)
+			}
+			if t.Terrain != sim.Water {
+				shade(draw, at, c, tx, ty)
 			}
 		}
 	}
@@ -314,6 +319,42 @@ func drawStatic(draw func(*ebiten.Image, int, int), at *Atlas, c *sim.City, x0, 
 			}
 		}
 	}
+}
+
+// shade lays the hill shading for tile (x, y): lit or shadowed by its slope
+// toward the north-west, with a dark step where a neighbour below lies
+// south or east and a light lip where one lies above.
+func shade(draw func(*ebiten.Image, int, int), at *Atlas, c *sim.City, x, y int) {
+	h := int(c.At(x, y).Height)
+	if h > 1 {
+		draw(at.Tint[min(h-1, len(at.Tint)-1)], x, y)
+	}
+	nb := func(dx, dy int) int {
+		if !c.In(x+dx, y+dy) {
+			return h
+		}
+		return int(c.At(x+dx, y+dy).Height)
+	}
+	n, e, s, w := nb(0, -1), nb(1, 0), nb(0, 1), nb(-1, 0)
+	light := max(-2, min(2, (n-h)+(w-h)))
+	light = -light // ground rising toward the sun is lit
+	edges := 0
+	if h > s {
+		edges |= sprites.EdgeS
+	}
+	if h > e {
+		edges |= sprites.EdgeE
+	}
+	if n > h {
+		edges |= sprites.EdgeN
+	}
+	if w > h {
+		edges |= sprites.EdgeW
+	}
+	if light == 0 && edges == 0 {
+		return
+	}
+	draw(at.Shade[sprites.ShadeKey(light, edges)], x, y)
 }
 
 func (v WorldView) isGrowing(x, y int) bool { return v.Grow != nil && v.Grow(x, y) < 1 }

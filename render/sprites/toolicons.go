@@ -22,6 +22,7 @@ const (
 	IconOverlay
 	IconPause
 	IconPlay
+	IconTerrain
 	IconCount
 )
 
@@ -105,6 +106,7 @@ func ToolIcons(r theme.Roles) [IconCount]*image.RGBA {
 		".....###........",
 		".....#..........",
 	}, r.UIOk)
+	ic[IconTerrain] = mountain(r)
 	return ic
 }
 

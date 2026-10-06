@@ -18,6 +18,9 @@ func (c *City) Inspect(x, y int) Inspection {
 		in.Facts = append(in.Facts, fmt.Sprintf("police %.0f%%  fire %.0f%%  school %.0f%%  health %.0f%%",
 			100*t.Cover[0], 100*t.Cover[1], 100*t.Cover[2], 100*t.Cover[3]))
 	}
+	defer func() {
+		in.Facts = append(in.Facts, fmt.Sprintf("height %d, slope %d", t.Height, c.Slope(x, y)))
+	}()
 	switch {
 	case t.IsZone():
 		z := t.Kind - ZoneR

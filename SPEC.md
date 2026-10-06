@@ -581,8 +581,26 @@ stop, if a powered bus depot exists) to each road tile on the way.
 `congestion = load / 150`. Tiles next to a road with congestion above 0.5
 lose up to 0.15 land value. Homes with no road path to jobs get −0.3 on
 their growth score (only once the city has jobs); commutes over 40 tiles
-get −0.15. Cars are cosmetic: drawn on straight road tiles, denser and
-slower with congestion.
+get −0.15. Cars (0.3.0) are sampled real trips over the same routes: one per ~5
+commuters, morning to work, evening home, a few midday errands; slower on
+congested tiles. They're drawn only, not saved.
+
+### 6.10 Big buildings (0.3.0)
+A 2×2 square of level-3 lots of one zone, all powered and watered, with
+mean land value ≥ 0.75 and zone demand > 0.2, merges with chance 0.03 a
+day. Each tile then holds 1.25× its capacity. A merged block counts as
+reachable if any tile touches a road. Any decline splits it first.
+
+### 6.11 Terrain (0.3.0)
+Heights 0–10; water at 0. Land height = 1 + scaled noise (range per map
+type: river/lakes 4, coast/islands 6, highlands 10), capped at
+`1 + (distance to water − 1) / 2` so banks rise gently, rock +2, then
+lowered until no neighbour step exceeds 2. Slope = largest step to a
+neighbour. Zones need slope ≤ 1; buildings need a footprint height range
+≤ 1; roads need slope ≤ 2 and cost 3× at 2. Land value +0.05 per level a
+tile stands above the mean of its surroundings (radius 4, up to 3).
+Terraforming: ±1 level or level to the first tile, $25 per level per tile,
+open ground only.
 
 ## 12. Decisions
 

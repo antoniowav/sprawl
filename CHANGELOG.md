@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 — 2026-10-06
+
+- Cars are real trips now: one car for about five commuters leaves a home
+  in the morning rush, drives the routed path through the junctions to
+  work, parks, and drives home in the evening; a few errands at midday,
+  quiet at night. Jams slow them down.
+- 2×2 buildings: four high-density lots of one zone with land value 0.75+,
+  power, water and demand merge into a residential tower, an office tower
+  or mall, or an industrial complex, with 25% more capacity. They split
+  again if one tile declines; bulldozing removes the whole block.
+- Terrain: every map has hills (heights 0–10), with shading and terrace
+  edges. Water lies in the valleys. Zones and buildings need gentle ground,
+  roads can climb two-level steps at triple cost, cliffs take nothing.
+  Hilltops with a view raise land value. Terraforming: t then r/l/f
+  (raise, lower, level) or the mountain button, $25 per level per tile;
+  lowering ground beside water floods it, raising water makes land.
+  Height overlay. Saves from 0.2.0 load flat.
+
 ## 0.2.0 — 2026-10-06
 
 - Traffic: homes route their commuters to the nearest jobs over the roads;

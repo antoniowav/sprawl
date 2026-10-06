@@ -31,6 +31,9 @@ func MinimapPixels(c *sim.City, r theme.Roles, pix []byte) {
 		case t.Terrain == sim.Rock:
 			col = r.Rock
 		}
+		if t.Terrain != sim.Water {
+			col = theme.Mix(col, r.UIText, 0.035*float64(t.Height)) // higher ground reads lighter
+		}
 		pix[i*4], pix[i*4+1], pix[i*4+2], pix[i*4+3] = col.R, col.G, col.B, 0xff
 	}
 }

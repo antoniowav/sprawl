@@ -48,12 +48,13 @@ road that leads to a plant has power; use lines to reach the rest.
 | right or middle drag | pan |
 | `r` `p` `w` `d` | road, power line, water pipe, bulldoze |
 | `z` then `r` `c` `i` | residential, commercial, industrial zone |
+| `t` then `r` `l` `f` | raise, lower, level ground |
 | `b` | buildings menu |
 | `Enter` | apply the tool at the cursor |
 | `v` … `Enter` | visual mode: rectangle (zones, bulldoze) or L-path (roads, lines, pipes); `o` swaps the corner |
 | `Shift+Enter` | paint mode: every move applies the tool |
 | left click / drag | apply the tool / select like visual mode |
-| `o` | cycle overlays: power, water, traffic, police, fire, school, health, land value, pollution |
+| `o` | cycle overlays: power, water, traffic, police, fire, school, health, land value, pollution, height |
 | `u` | underground view (pipes); in it, bulldoze removes pipes |
 | `Space`, `1` `2` `3` | pause, speed |
 | `Tab` | side panel |
@@ -89,11 +90,24 @@ Twelve months in debt and the city goes bankrupt.
 
 New cities pick a map: river valley, coast, lakes, islands or highlands,
 from 96×96 up to 256×256. Roads cross water as bridges ($60 a tile).
-Homes send their commuters along the roads to the nearest jobs: busy roads
-fill with cars, jammed roads lower land value, and homes with no road to
-any job stop growing. Bus stops near homes (with a bus depot somewhere)
+Homes send their commuters along the roads to the nearest jobs. Cars are
+real trips: they leave home in the morning rush, drive the route to work,
+and come back in the evening. Jammed roads lower land value, and homes with
+no road to any job stop growing. Bus stops near homes (with a bus depot somewhere)
 take 30% of commuters off the road. Two scenarios, Boomtown and Island,
 give you a goal and a deadline, and something happens partway through.
+
+### Hills and big buildings
+
+Every map has hills. Zones and buildings need gentle ground; roads can climb
+steeper steps at triple cost; cliffs take nothing. Hilltops with a view are
+worth more. Reshape the land with `t` then `r`, `l` or `f` (raise, lower,
+level) or the mountain button: $25 per level per tile. Lowering ground next
+to water floods it, raising water makes land.
+
+Four high-density lots of the same kind in a square, with high land value,
+power, water and demand, merge into one big building: a residential tower,
+an office tower or mall, or an industrial complex, with 25% more room.
 
 ### Buildings and goals
 

@@ -60,6 +60,7 @@ const (
 	Photo         Action = "photo"
 	Achievements  Action = "achievements"
 	Inspect       Action = "inspect"
+	TerraPrefix   Action = "terrain_prefix"
 )
 
 // Def is a default binding with its help text.
@@ -100,6 +101,7 @@ var Defaults = []Def{
 	{WaterPipe, []string{"w"}, "water pipe", "build"},
 	{Bulldoze, []string{"d"}, "bulldoze", "build"},
 	{ZonePrefix, []string{"z"}, "zone: then r/c/i", "build"},
+	{TerraPrefix, []string{"t"}, "terrain: then r/l/f", "build"},
 	{BuildMenu, []string{"b"}, "buildings menu", "build"},
 	{Apply, []string{"Enter"}, "apply tool", "build"},
 	{Paint, []string{"Shift+Enter"}, "paint mode", "build"},

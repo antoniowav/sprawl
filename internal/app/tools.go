@@ -66,6 +66,20 @@ func (a *App) do(p input.Press) {
 		a.doMenu(p)
 		return
 	}
+	if a.terraPending {
+		a.terraPending = false
+		switch p.Rune {
+		case 'r':
+			a.setTool(sim.ToolRaise)
+		case 'l':
+			a.setTool(sim.ToolLower)
+		case 'f':
+			a.setTool(sim.ToolLevel)
+		default:
+			a.flash(sim.Info, "terrain: press r (raise), l (lower) or f (level) after t")
+		}
+		return
+	}
 	if a.zonePending {
 		a.zonePending = false
 		switch p.Rune {
@@ -145,6 +159,8 @@ func (a *App) do(p input.Press) {
 		a.setTool(sim.ToolBulldoze)
 	case input.ZonePrefix:
 		a.zonePending = true
+	case input.TerraPrefix:
+		a.terraPending = true
 	case input.Apply:
 		if !a.hasTool {
 			a.inspectOn, a.inspectPt = true, sim.Pt{X: a.cx, Y: a.cy}
@@ -293,6 +309,7 @@ var toolbarTools = []struct {
 	{sprites.IconZoneC, sim.ToolZoneC, "", "Commercial zone"},
 	{sprites.IconZoneI, sim.ToolZoneI, "", "Industrial zone"},
 	{sprites.IconBuild, 0, input.BuildMenu, "Buildings"},
+	{sprites.IconTerrain, sim.ToolRaise, input.TerraPrefix, "Terrain: raise, lower, level"},
 	{sprites.IconOverlay, 0, input.Overlay, "Overlay"},
 	{sprites.IconPause, 0, input.Pause, "Pause"},
 }
@@ -323,6 +340,11 @@ func (a *App) toolbarButtons() []render.ToolButton {
 		case t.act == input.BuildMenu:
 			_, b.Active = a.tool.Building()
 			b.Active = b.Active && a.hasTool
+		case t.icon == sprites.IconTerrain:
+			_, b.Active = a.tool.Terraform()
+			b.Active = b.Active && a.hasTool
+			keys = "t r/l/f"
+			b.Tip = "Terrain: raise, lower, level · " + keys
 		default:
 			b.Active = a.hasTool && a.tool == t.tool
 		}
@@ -341,6 +363,9 @@ func toolSound(t sim.Tool) sound.Effect {
 	if _, ok := t.Building(); ok {
 		return sound.Building
 	}
+	if _, ok := t.Terraform(); ok {
+		return sound.Bulldoze
+	}
 	return sound.Place
 }
 
@@ -355,6 +380,13 @@ func (a *App) clickToolbar(i int) {
 	case t.tool >= sim.ToolZoneR && t.tool <= sim.ToolZoneI:
 		a.setTool(t.tool)
 		a.dirty = true
+	case t.icon == sprites.IconTerrain: // cycles raise → lower → level
+		next := sim.ToolRaise
+		if a.hasTool && a.tool >= sim.ToolRaise && a.tool < sim.ToolLevel {
+			next = a.tool + 1
+		}
+		a.setTool(next)
+		a.flash(sim.Info, "%s · click again for the next terrain tool", next)
 	default:
 		a.do(input.Press{Action: t.act})
 	}

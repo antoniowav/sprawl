@@ -60,6 +60,9 @@ func (c *City) updateLandValue() {
 				lv -= float64(c.noise[y*c.W+x])
 			}
 			lv += float64(c.lvBonus[y*c.W+x])
+			if t.Terrain != Water {
+				lv += viewBonus * c.view(x, y) // hilltops with a view
+			}
 			t.LandValue = float32(clamp(lv, 0, 1))
 		}
 	}

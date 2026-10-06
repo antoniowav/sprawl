@@ -30,12 +30,15 @@ const (
 	ToolUniversity
 	ToolNuclear
 	ToolMonument
+	ToolRaise
+	ToolLower
+	ToolLevel
 )
 
 var toolNames = [...]string{"road", "power line", "water pipe", "bulldoze", "residential", "commercial",
 	"industrial", "power plant", "water pump", "police station", "fire station", "school",
 	"park", "wind turbine", "water tower", "city hall", "stadium", "bus stop", "bus depot", "hospital",
-	"solar farm", "university", "nuclear plant", "monument"}
+	"solar farm", "university", "nuclear plant", "monument", "raise ground", "lower ground", "level ground"}
 
 // BuildingSpec describes a placeable building and everything it does.
 type BuildingSpec struct {
@@ -157,8 +160,25 @@ type Plan struct {
 // PlanTool works out what Apply would do, without changing anything.
 // pipesOnly makes bulldoze remove pipes instead of surface things
 // (used in underground view).
+// Terraform maps a terrain tool to its operation.
+func (t Tool) Terraform() (int, bool) {
+	switch t {
+	case ToolRaise:
+		return TerraRaise, true
+	case ToolLower:
+		return TerraLower, true
+	case ToolLevel:
+		return TerraLevel, true
+	}
+	return 0, false
+}
+
 func (c *City) PlanTool(t Tool, pts []Pt, pipesOnly bool) Plan {
 	p := Plan{Tool: t}
+	if op, ok := t.Terraform(); ok {
+		tp := c.PlanTerraform(op, pts)
+		return Plan{Tool: t, Tiles: tp.Tiles, Cost: tp.Cost, Err: tp.Err}
+	}
 	if spec, ok := t.Building(); ok {
 		return c.planBuilding(spec, pts)
 	}
@@ -179,7 +199,7 @@ func (c *City) PlanTool(t Tool, pts []Pt, pipesOnly bool) Plan {
 			}
 			continue
 		}
-		cost, ok := c.tileCost(t, tl, pipesOnly)
+		cost, ok := c.tileCost(t, tl, pipesOnly, c.Slope(pt.X, pt.Y))
 		if !ok {
 			p.Skipped++
 			continue
@@ -203,6 +223,10 @@ func (c *City) PlanTool(t Tool, pts []Pt, pipesOnly bool) Plan {
 // Apply executes a plan made by PlanTool on the current state. It returns
 // the plan, with Err set if nothing was done.
 func (c *City) Apply(t Tool, pts []Pt, pipesOnly bool) Plan {
+	if op, ok := t.Terraform(); ok {
+		tp := c.Terraform(op, pts)
+		return Plan{Tool: t, Tiles: tp.Tiles, Cost: tp.Cost, Err: tp.Err}
+	}
 	p := c.PlanTool(t, pts, pipesOnly)
 	if p.Err != "" {
 		return p
@@ -229,15 +253,18 @@ func (c *City) Apply(t Tool, pts []Pt, pipesOnly bool) Plan {
 func zoneKind(t Tool) Kind { return ZoneR + Kind(t-ToolZoneR) }
 
 // tileCost says whether t changes this tile and what it costs.
-func (c *City) tileCost(t Tool, tl *Tile, pipesOnly bool) (float64, bool) {
+func (c *City) tileCost(t Tool, tl *Tile, pipesOnly bool, slope int) (float64, bool) {
 	buildable := tl.Terrain != Water && tl.Terrain != Rock
 	switch t {
 	case ToolRoad:
 		if tl.Terrain == Water && tl.Kind == Empty {
 			return CostBridge, true // bridge
 		}
-		if !buildable || tl.Kind == Road || (tl.Kind != Empty && !isEmptyLot(tl)) {
+		if !buildable || slope > roadClimb || tl.Kind == Road || (tl.Kind != Empty && !isEmptyLot(tl)) {
 			return 0, false
+		}
+		if slope == roadClimb {
+			return 3 * CostRoad, true // a steep stretch: cuttings and switchbacks
 		}
 		return CostRoad, true
 	case ToolLine:
@@ -252,7 +279,7 @@ func (c *City) tileCost(t Tool, tl *Tile, pipesOnly bool) (float64, bool) {
 		return CostPipe, true
 	case ToolZoneR, ToolZoneC, ToolZoneI:
 		k := zoneKind(t)
-		if !buildable || tl.Kind == k || (tl.Kind != Empty && !isEmptyLot(tl)) {
+		if !buildable || slope > gentle || tl.Kind == k || (tl.Kind != Empty && !isEmptyLot(tl)) {
 			return 0, false
 		}
 		return CostZone, true
@@ -333,6 +360,7 @@ func (c *City) planBuilding(spec BuildingSpec, pts []Pt) Plan {
 	}
 	o := pts[0]
 	touchesWater := false
+	lo, hi := uint8(255), uint8(0)
 	for y := o.Y; y < o.Y+spec.Size; y++ {
 		for x := o.X; x < o.X+spec.Size; x++ {
 			if !c.In(x, y) {
@@ -341,6 +369,7 @@ func (c *City) planBuilding(spec BuildingSpec, pts []Pt) Plan {
 			}
 			t := c.At(x, y)
 			p.Tiles = append(p.Tiles, Pt{x, y}) // kept on error, for the preview
+			lo, hi = min(lo, t.Height), max(hi, t.Height)
 			if t.Terrain == Water || t.Terrain == Rock || (t.Kind != Empty && !isEmptyLot(t)) {
 				p.Err = fmt.Sprintf("%s needs %d×%d clear land", spec.Tool, spec.Size, spec.Size)
 			}
@@ -354,6 +383,8 @@ func (c *City) planBuilding(spec BuildingSpec, pts []Pt) Plan {
 	p.Cost = spec.Cost
 	switch {
 	case p.Err != "":
+	case hi-lo > gentle:
+		p.Err = fmt.Sprintf("%s needs flatter ground (level it with t f)", spec.Tool)
 	case !c.Unlocked(spec):
 		p.Err = fmt.Sprintf("%s unlocks at %d people", spec.Tool, spec.Unlock)
 	case spec.Kind == WaterPump && !touchesWater:
@@ -418,9 +449,18 @@ func RectPts(a, b Pt) []Pt {
 }
 
 // Selection returns the tiles a tool affects between anchor a and cursor b.
+// For levelling, the anchor comes first: it sets the height.
 func Selection(t Tool, a, b Pt, vertFirst bool) []Pt {
 	if t.IsLine() {
 		return LPath(a, b, vertFirst)
 	}
-	return RectPts(a, b)
+	pts := RectPts(a, b)
+	if t == ToolLevel {
+		for i, p := range pts {
+			if p == a {
+				pts[0], pts[i] = pts[i], pts[0]
+			}
+		}
+	}
+	return pts
 }

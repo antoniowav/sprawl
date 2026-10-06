@@ -215,20 +215,20 @@ building inspector (click a building); advisor tips; achievements.
 
 # Phase 4 — living traffic, big buildings, terrain (started 2026-10-06)
 
-## M25 — Real car trips
+## M25 — Real car trips ✅ (2026-10-06)
 Cars are sampled real trips (one car ≈ 20 commuters): leave a home in the
 morning rush, drive the routed path through junctions to work, park, and
 drive home in the evening; a few shopping trips at midday; quiet at night.
 Speed drops on congested tiles. Trips follow a traffic clock that always
 cycles, even when the sky is held at day or night.
 
-## M26 — 2×2 buildings
+## M26 — 2×2 buildings ✅ (2026-10-06)
 Four high-density lots of the same zone in a square, with land value
 ≥ 0.75, power, water and demand, merge into one big building (residential
 tower, office tower or mall, factory complex) with 25% more capacity. If
 any of the four would decline, or is bulldozed, the block splits again.
 
-## M27 — Terrain
+## M27 — Terrain ✅ (2026-10-06)
 Every tile has a height (0–10). Generated from noise per map type; rivers
 run downhill along valleys into lakes or off the map. Hill shading and
 terrace edges show height. Rules: zones and buildings need gentle ground

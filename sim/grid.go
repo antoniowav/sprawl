@@ -52,6 +52,7 @@ type Tile struct {
 	Line    bool  // overhead power line
 	Pipe    bool  // underground pipe
 	Anchor  int32 // multi-tile buildings: index of top-left tile, else -1
+	Height  uint8 // 0 (water level) .. MaxHeight
 
 	// Derived each day; not saved.
 	Powered, Watered bool

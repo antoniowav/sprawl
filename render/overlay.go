@@ -23,11 +23,12 @@ const (
 	OverlayHealth
 	OverlayLandValue
 	OverlayPollution
+	OverlayHeight
 	overlayCount
 )
 
 var overlayNames = [...]string{"none", "power", "water", "traffic", "police", "fire", "school", "health",
-	"land value", "pollution"}
+	"land value", "pollution", "height"}
 
 // Heat reports whether the overlay is a 0..1 heat map (it has a legend).
 func (o Overlay) Heat() bool { return o >= OverlayTraffic }
@@ -54,6 +55,8 @@ func heatValue(o Overlay, t *sim.Tile) float64 {
 		return float64(t.LandValue)
 	case OverlayPollution:
 		return float64(t.Pollution)
+	case OverlayHeight:
+		return float64(t.Height) / sim.MaxHeight
 	}
 	return 0
 }

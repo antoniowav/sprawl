@@ -18,12 +18,12 @@ type TileChange struct {
 // persistent copies the fields a player edit can change.
 func persistent(t Tile) Tile {
 	return Tile{Terrain: t.Terrain, Kind: t.Kind, Level: t.Level, Variant: t.Variant,
-		Line: t.Line, Pipe: t.Pipe, Anchor: t.Anchor}
+		Line: t.Line, Pipe: t.Pipe, Anchor: t.Anchor, Height: t.Height}
 }
 
 func setPersistent(dst *Tile, src Tile) {
 	dst.Terrain, dst.Kind, dst.Level, dst.Variant = src.Terrain, src.Kind, src.Level, src.Variant
-	dst.Line, dst.Pipe, dst.Anchor = src.Line, src.Pipe, src.Anchor
+	dst.Line, dst.Pipe, dst.Anchor, dst.Height = src.Line, src.Pipe, src.Anchor, src.Height
 }
 
 // ApplyEdit is Apply that also returns an Edit for undo (nil on failure).
@@ -32,6 +32,8 @@ func (c *City) ApplyEdit(t Tool, pts []Pt, pipesOnly bool) (Plan, *Edit) {
 	if p.Err != "" {
 		return p, nil
 	}
+	// Terraforming also changes the terrain of neighbours (flooding), but
+	// only the planned tiles, so recording those is enough.
 	before := make([]Tile, len(p.Tiles))
 	for i, pt := range p.Tiles {
 		before[i] = persistent(*c.At(pt.X, pt.Y))
